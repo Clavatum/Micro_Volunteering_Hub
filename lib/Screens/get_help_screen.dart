@@ -83,13 +83,6 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: const SizedBox.shrink(),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -110,7 +103,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     height: 180,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
+                      color: Colors.white.withValues(alpha: .06),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -138,7 +131,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     maxLines: 4,
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.95),
+                      fillColor: Colors.white.withValues(alpha: .95),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
@@ -148,6 +141,32 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                         ? 'Please enter a description'
                         : null,
                     style: GoogleFonts.poppins(color: Colors.black87),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    'Location',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 72,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Location placeholder',
+                        style: GoogleFonts.poppins(color: Colors.white70),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -163,7 +182,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -191,33 +210,6 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    'Location',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 72,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Location placeholder',
-                        style: GoogleFonts.poppins(color: Colors.white70),
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 16),
 
                   Text(
@@ -234,7 +226,9 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.95),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: .95,
+                            ),
                             foregroundColor: primary,
                           ),
                           onPressed: () => _pickStartDateTime(context),

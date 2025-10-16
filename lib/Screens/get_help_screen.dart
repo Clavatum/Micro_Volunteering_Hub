@@ -19,8 +19,8 @@ class GetHelpScreen extends StatefulWidget {
 }
 
 class _GetHelpScreenState extends State<GetHelpScreen> {
-  String cloudName = 'dm2k6xcne';
-  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String cloudName = 'CLOUD_NAME';
+  String APIkey = 'API_KEY';
   String unsignedPresetName = 'microvolunteeringapp';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();

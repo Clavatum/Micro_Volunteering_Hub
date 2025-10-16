@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "D:/Flutter/Micro_Volunteering_Hub/linux"
+    "cmake.sourceDirectory": "D:/Flutter/Micro_Volunteering_Hub/linux",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

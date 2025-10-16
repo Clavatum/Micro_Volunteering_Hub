@@ -17,26 +17,19 @@ class GoogleSignInScreen extends StatelessWidget {
   Future<void> _logInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
-          .authenticate(); //Pops up a Google Sign In Screen to choose account.
+          .authenticate();
       if (googleUser == null) {
-        //If signing in is not successful then return.
         _snackBarMessage(context, 'Sign in cancelled');
         return;
       }
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      // GoogleSignInAuthentication currently provides an idToken. Use it to
-      // create a Firebase credential. accessToken may not be available in
-      // some versions of the plugin.
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
       final UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithCredential(
-            credential,
-          ); //Login to firebase server using credential.
+          .signInWithCredential(credential);
       if (userCredential.user != null) {
-        //If logging in is successful then send user to home screen.
         _snackBarMessage(context, "Login successful.");
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainMenuScreen()),
@@ -46,14 +39,12 @@ class GoogleSignInScreen extends StatelessWidget {
       }
     } on PlatformException catch (e) {
       if (e.code == "network_error") {
-        //If device has slow or no internet.
         _snackBarMessage(
           context,
           "Network error, please check your internet connection.",
         );
       }
     } catch (e) {
-      //For other errors, handle with catch block.
       debugPrint(e.toString());
       _snackBarMessage(
         context,
@@ -120,6 +111,21 @@ class GoogleSignInScreen extends StatelessWidget {
                   onPressed: () async {
                     await _logInWithGoogle(context);
                   },
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+                  );
+                },
+                child: Text(
+                  'Skip sign in',
+                  style: GoogleFonts.poppins(
+                    color: primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

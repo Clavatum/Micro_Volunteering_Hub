@@ -12,7 +12,20 @@
           "package_name": "com.example.micro_volunteering_hub"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "615113923331-7si1neuaitp2q6seah3085ks5n3vuo0h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.micro_volunteering_hub",
+            "certificate_hash": "5197ce31d9457d99dce6b98748ca28c26486e445"
+          }
+        },
+        {
+          "client_id": "615113923331-gdqprlh8gb8reimcp9pfams13gdornbs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAnBYaLdFgYyqR7Tfvk_0SudvLRtogLbdM"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "615113923331-gdqprlh8gb8reimcp9pfams13gdornbs.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "615113923331-c7vuaupo1ptsi7j68utu5isg6s4oumfd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.microVolunteeringHub"
+              }
+            }
+          ]
         }
       }
     }

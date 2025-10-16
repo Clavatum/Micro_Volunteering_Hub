@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '615113923331',
     projectId: 'micro-volunteering-hub-afb21',
     storageBucket: 'micro-volunteering-hub-afb21.firebasestorage.app',
+    androidClientId: '615113923331-7si1neuaitp2q6seah3085ks5n3vuo0h.apps.googleusercontent.com',
+    iosClientId: '615113923331-c7vuaupo1ptsi7j68utu5isg6s4oumfd.apps.googleusercontent.com',
     iosBundleId: 'com.example.microVolunteeringHub',
   );
 
@@ -72,6 +74,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '615113923331',
     projectId: 'micro-volunteering-hub-afb21',
     storageBucket: 'micro-volunteering-hub-afb21.firebasestorage.app',
+    androidClientId: '615113923331-7si1neuaitp2q6seah3085ks5n3vuo0h.apps.googleusercontent.com',
+    iosClientId: '615113923331-c7vuaupo1ptsi7j68utu5isg6s4oumfd.apps.googleusercontent.com',
     iosBundleId: 'com.example.microVolunteeringHub',
   );
 
@@ -83,4 +87,5 @@ class DefaultFirebaseOptions {
     authDomain: 'micro-volunteering-hub-afb21.firebaseapp.com',
     storageBucket: 'micro-volunteering-hub-afb21.firebasestorage.app',
   );
+
 }

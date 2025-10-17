@@ -1,5 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class GetHelpScreen extends StatefulWidget {
   const GetHelpScreen({Key? key}) : super(key: key);
@@ -9,12 +19,21 @@ class GetHelpScreen extends StatefulWidget {
 }
 
 class _GetHelpScreenState extends State<GetHelpScreen> {
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String unsignedPresetName = 'microvolunteeringapp';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
+
   DateTime? _startDateTime;
   int _durationHours = 1;
   int _peopleNeeded = 1;
   String? _category;
+  final _imagePicker = ImagePicker();
+  File? _image;
+  String? url;
+  String? _currentAddress;
+  Position? _currentPosition;
 
   final List<String> _categories = [
     'Food distribution',
@@ -25,10 +44,160 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
     'Other',
   ];
 
+  Future<void> _getCurrentPosition() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+    await Geolocator.getCurrentPosition()
+        .then((Position position) {
+          setState(() => _currentPosition = position);
+        })
+        .catchError((e) {
+          debugPrint(e);
+        });
+  }
+
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Location services are disabled. Please enable the services',
+          ),
+        ),
+      );
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permissions are denied')),
+        );
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Location permissions are permanently denied, we cannot request permissions.',
+          ),
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Future<String> _getHumanReadableAddressFromLatLng() async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
+    Placemark place = placemarks[0];
+    return '${place.street}, ${place.subLocality},  ${place.subAdministrativeArea}, ${place.postalCode}';
+  }
+
+  @override
+  void initState() {
+    _getCurrentPosition();
+    super.initState();
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> uploadToCloudinary() async {
+    if (_image == null) return;
+    final url = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
+
+    var request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = unsignedPresetName
+      ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final jsonResp = json.decode(respStr);
+      this.url = jsonResp['secure_url'];
+    } else {
+      print('Upload failed with status: ${response.statusCode}');
+      return;
+    }
+  }
+
+  Future<void> uploadFirestore() async {
+    if (_currentPosition == null || url == null) return;
+
+    Map<String, String> data = {
+      'user_lat': _currentPosition!.latitude.toString(),
+      'user_lng': _currentPosition!.longitude.toString(),
+      // 'user_mail': FirebaseAuth.instance.currentUser!.email!,
+      'user_image_url': url!,
+    };
+    await FirebaseFirestore.instance.collection('user_info').add(data);
+  }
+
+  Future<void> handleImage() async {
+    await uploadToCloudinary();
+    await uploadFirestore();
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+    setState(() {
+      _image = File(image.path);
+    });
+    await handleImage();
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.camera);
+    if (image == null) return;
+    setState(() {
+      _image = File(image.path);
+    });
+    await handleImage();
+  }
+
+  void pickImage() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SizedBox(
+        height: 150,
+        child: Column(
+          children: [
+            SizedBox(width: double.infinity),
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromCamera();
+                Navigator.pop(context);
+              },
+              child: Text('Select from camera'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromGallery();
+                Navigator.pop(context);
+              },
+              child: Text('Select from gallery'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _pickStartDateTime(BuildContext context) async {
@@ -107,11 +276,18 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
-                    child: Center(
-                      child: Text(
-                        'Pictures placeholder',
-                        style: GoogleFonts.poppins(color: Colors.white70),
-                      ),
+                    child: InkWell(
+                      child: _image != null
+                          ? Image.file(_image!, fit: BoxFit.cover)
+                          : Center(
+                              child: Text(
+                                'Pictures placeholder',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                      onTap: () => pickImage(),
                     ),
                   ),
 

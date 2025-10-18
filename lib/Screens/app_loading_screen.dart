@@ -1,5 +1,10 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/main_menu_screen.dart';
 import 'google_sign_in_screen.dart';
 
 class AppLoadingScreen extends StatefulWidget {
@@ -9,7 +14,8 @@ class AppLoadingScreen extends StatefulWidget {
   State<AppLoadingScreen> createState() => _AppLoadingScreenState();
 }
 
-class _AppLoadingScreenState extends State<AppLoadingScreen> {
+class _AppLoadingScreenState extends State<AppLoadingScreen>{
+
   @override
   void initState() {
     super.initState();
@@ -17,18 +23,23 @@ class _AppLoadingScreenState extends State<AppLoadingScreen> {
   }
 
   Future<void> _initApp() async {
-    try {
-      // Try to initialize Firebase if available; if not, continue anyway
-      await Firebase.initializeApp();
-    } catch (_) {
-      // ignore errors — app can continue without Firebase for now
-    }
+    //Wait for firebase to initialize
+    await Firebase.initializeApp();
 
-    // After initialization, move to Google sign-in screen
+    // Move to sign in screen
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
-    );
+
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user == null){
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
+      );
+    }
+    else{
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+      );
+    }
   }
 
   @override
@@ -42,10 +53,33 @@ class _AppLoadingScreenState extends State<AppLoadingScreen> {
             colors: [Color(0xFFf6d365), Color(0xFFfda085)],
           ),
         ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
-          ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Loading",
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5E35B1),
+                ),
+              ),
+              SizedBox(height: 20),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
+              ),
+              SizedBox(height: 40),
+              Text(
+                "Initializing firebase",
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF5E35B1),
+                ),
+              )
+            ],
+          )
         ),
       ),
     );

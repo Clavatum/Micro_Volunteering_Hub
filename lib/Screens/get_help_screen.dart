@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:micro_volunteering_hub/screens/map_screen.dart';
+import 'package:uuid/uuid.dart';
+import 'package:uuid/v4.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,8 +22,8 @@ class GetHelpScreen extends StatefulWidget {
 }
 
 class _GetHelpScreenState extends State<GetHelpScreen> {
-  String cloudName = 'dm2k6xcne';
-  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String cloudName = 'CLOUD_NAME';
+  String APIkey = 'API_KEY';
   String unsignedPresetName = 'microvolunteeringapp';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
@@ -32,8 +35,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
-  String? _currentAddress;
-  Position? _currentPosition;
+  Map<String, dynamic>? location_knowladge;
 
   final List<String> _categories = [
     'Food distribution',
@@ -44,68 +46,8 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
     'Other',
   ];
 
-  Future<void> _getCurrentPosition() async {
-    final hasPermission = await _handleLocationPermission();
-    if (!hasPermission) return;
-    await Geolocator.getCurrentPosition()
-        .then((Position position) {
-          setState(() => _currentPosition = position);
-        })
-        .catchError((e) {
-          debugPrint(e);
-        });
-  }
-
-  Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Location services are disabled. Please enable the services',
-          ),
-        ),
-      );
-      return false;
-    }
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permissions are denied')),
-        );
-        return false;
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Location permissions are permanently denied, we cannot request permissions.',
-          ),
-        ),
-      );
-      return false;
-    }
-    return true;
-  }
-
-  Future<String> _getHumanReadableAddressFromLatLng() async {
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
-    );
-    Placemark place = placemarks[0];
-    return '${place.street}, ${place.subLocality},  ${place.subAdministrativeArea}, ${place.postalCode}';
-  }
-
   @override
   void initState() {
-    _getCurrentPosition();
     super.initState();
   }
 
@@ -138,12 +80,18 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
   }
 
   Future<void> uploadFirestore() async {
-    if (_currentPosition == null || url == null) return;
+    if (location_knowladge == null ||
+        location_knowladge!['position'] == null ||
+        url == null)
+      return;
+
+    Position pos = location_knowladge!['position'];
 
     Map<String, String> data = {
-      'user_lat': _currentPosition!.latitude.toString(),
-      'user_lng': _currentPosition!.longitude.toString(),
       // 'user_mail': FirebaseAuth.instance.currentUser!.email!,
+      'id': Uuid().v4(),
+      'selectedLat': pos.latitude.toString(),
+      'selectedLon': pos.longitude.toString(),
       'user_image_url': url!,
     };
     await FirebaseFirestore.instance.collection('user_info').add(data);
@@ -328,6 +276,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       color: Colors.black87,
                     ),
                   ),
+
                   const SizedBox(height: 8),
                   Container(
                     height: 72,
@@ -337,10 +286,28 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.white24),
                     ),
-                    child: Center(
-                      child: Text(
-                        'Location placeholder',
-                        style: GoogleFonts.poppins(color: Colors.white70),
+                    child: InkWell(
+                      onTap: () async {
+                        Map<String, dynamic> map = await Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (context) => MapScreen(),
+                              ),
+                            );
+                        setState(() {
+                          location_knowladge = map;
+                        });
+                      },
+                      child: Center(
+                        child: Text(
+                          location_knowladge == null ||
+                                  location_knowladge!['position'] == null
+                              ? 'Tap to select a location'
+                              : '${location_knowladge!['address']}',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                          ).copyWith(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
                       ),
                     ),
                   ),

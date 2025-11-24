@@ -46,6 +46,19 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
     'Other',
   ];
 
+  final List<String> _durationOptions = [
+    '15 minutes',
+    '30 minutes',
+    '1 hour',
+    '2 hours',
+    '4 hours',
+    '8 hours',
+    '1 day',
+    '2 days',
+  ];
+  String? _selectedDuration;
+  List<String> _selectedCategories = [];
+
   @override
   void initState() {
     super.initState();
@@ -182,7 +195,8 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF5E35B1);
+    const Color primary = Color(0xFF00A86B);
+    const Color bg = Color(0xFFF2F2F3);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primary,
@@ -201,13 +215,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFf6d365), Color(0xFFfda085)],
-          ),
-        ),
+        color: bg,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -322,37 +330,141 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: .95),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _category,
-                        hint: Text(
-                          'Select category',
-                          style: GoogleFonts.poppins(color: primary),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        isExpanded: true,
-                        items: _categories
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(
-                                  c,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.black87,
-                                  ),
-                                ),
+                        onPressed: () async {
+                          // show multi-select sheet
+                          final selected =
+                              await showModalBottomSheet<List<String>>(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (ctx) {
+                                  final temp = List<String>.from(
+                                    _selectedCategories,
+                                  );
+                                  return StatefulBuilder(
+                                    builder: (context, setStateModal) {
+                                      return Padding(
+                                        padding: MediaQuery.of(
+                                          context,
+                                        ).viewInsets,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Select categories',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              ..._categories.map((c) {
+                                                final checked = temp.contains(
+                                                  c,
+                                                );
+                                                return CheckboxListTile(
+                                                  value: checked,
+                                                  title: Text(
+                                                    c,
+                                                    style:
+                                                        GoogleFonts.poppins(),
+                                                  ),
+                                                  onChanged: (v) =>
+                                                      setStateModal(() {
+                                                        if (v == true)
+                                                          temp.add(c);
+                                                        else
+                                                          temp.remove(c);
+                                                      }),
+                                                );
+                                              }).toList(),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(ctx).pop(
+                                                          _selectedCategories,
+                                                        ),
+                                                    child: Text(
+                                                      'Cancel',
+                                                      style:
+                                                          GoogleFonts.poppins(),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  ElevatedButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(
+                                                          ctx,
+                                                        ).pop(temp),
+                                                    child: Text(
+                                                      'Done',
+                                                      style:
+                                                          GoogleFonts.poppins(),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                          if (selected != null) {
+                            setState(
+                              () => _selectedCategories = List<String>.from(
+                                selected,
                               ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _category = v),
+                            );
+                          }
+                        },
+                        child: Text(
+                          'Select Categories',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _selectedCategories.isEmpty
+                              ? 'No categories selected'
+                              : '${_selectedCategories.length} selected',
+                          style: GoogleFonts.poppins(color: Colors.black54),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  if (_selectedCategories.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      children: _selectedCategories
+                          .map((c) => Chip(label: Text(c)))
+                          .toList(),
+                    ),
                   const SizedBox(height: 16),
 
                   Text(
@@ -389,7 +501,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                   const SizedBox(height: 16),
 
                   Text(
-                    'Duration (hours)',
+                    'Duration',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -397,37 +509,36 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => setState(
-                          () => _durationHours = (_durationHours - 1).clamp(
-                            1,
-                            999,
-                          ),
-                        ),
-                        icon: Icon(Icons.remove_circle_outline, color: primary),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedDuration,
+                      isExpanded: true,
+                      decoration: const InputDecoration.collapsed(hintText: ''),
+                      hint: Text(
+                        'Select duration',
+                        style: GoogleFonts.poppins(color: primary),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$_durationHours hrs',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => setState(
-                          () => _durationHours = (_durationHours + 1).clamp(
-                            1,
-                            999,
-                          ),
-                        ),
-                        icon: Icon(Icons.add_circle_outline, color: primary),
-                      ),
-                    ],
+                      items: _durationOptions
+                          .map(
+                            (d) => DropdownMenuItem(
+                              value: d,
+                              child: Text(d, style: GoogleFonts.poppins()),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedDuration = v),
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Please select duration'
+                          : null,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -440,33 +551,32 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => setState(
-                          () =>
-                              _peopleNeeded = (_peopleNeeded - 1).clamp(1, 999),
-                        ),
-                        icon: Icon(Icons.remove_circle_outline, color: primary),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$_peopleNeeded',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => setState(
-                          () =>
-                              _peopleNeeded = (_peopleNeeded + 1).clamp(1, 999),
-                        ),
-                        icon: Icon(Icons.add_circle_outline, color: primary),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonFormField<int>(
+                      value: _peopleNeeded,
+                      isExpanded: true,
+                      decoration: const InputDecoration.collapsed(hintText: ''),
+                      items: List.generate(30, (i) => i + 1)
+                          .map(
+                            (n) => DropdownMenuItem(
+                              value: n,
+                              child: Text(
+                                n.toString(),
+                                style: GoogleFonts.poppins(),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _peopleNeeded = v ?? 1),
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -497,8 +607,10 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                         final event = {
                           'description': _descriptionController.text.trim(),
                           'start': _startDateTime!.toIso8601String(),
-                          'duration_hours': _durationHours,
+                          'duration':
+                              _selectedDuration ?? '$_durationHours hrs',
                           'people_needed': _peopleNeeded,
+                          'categories': _selectedCategories,
                           'created_at': DateTime.now().toIso8601String(),
                         };
 

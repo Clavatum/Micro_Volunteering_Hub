@@ -14,8 +14,7 @@ class AppLoadingScreen extends StatefulWidget {
   State<AppLoadingScreen> createState() => _AppLoadingScreenState();
 }
 
-class _AppLoadingScreenState extends State<AppLoadingScreen>{
-
+class _AppLoadingScreenState extends State<AppLoadingScreen> {
   @override
   void initState() {
     super.initState();
@@ -23,19 +22,16 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>{
   }
 
   Future<void> _initApp() async {
-    //Wait for firebase to initialize
     await Firebase.initializeApp();
 
-    // Move to sign in screen
     if (!mounted) return;
 
     User? user = FirebaseAuth.instance.currentUser;
-    if(user == null){
+    if (user == null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
       );
-    }
-    else{
+    } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainMenuScreen()),
       );
@@ -77,9 +73,9 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>{
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF5E35B1),
                 ),
-              )
+              ),
             ],
-          )
+          ),
         ),
       ),
     );

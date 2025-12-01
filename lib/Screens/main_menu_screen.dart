@@ -1,43 +1,28 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/user_events_provider.dart';
 import 'profile_screen.dart';
 import 'event_details_screen.dart';
 import 'get_help_screen.dart';
 import 'help_others_screen.dart';
 
-class MainMenuScreen extends StatefulWidget {
+class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({Key? key}) : super(key: key);
 
   @override
-  State<MainMenuScreen> createState() => _MainMenuScreenState();
+  ConsumerState<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends State<MainMenuScreen> {
+class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   int _navIndex = 0;
 
   final Color primary = const Color(0xFF00A86B);
   final Color background = const Color(0xFFF2F2F3);
 
-  final List<Map<String, String>> _events = [
-    {
-      'title': 'Park Cleaning Event',
-      'distance': '400 m away',
-      'time': 'Today, 18:30',
-      'host': 'User123',
-      'capacity': '9/20',
-      'image': 'https://picsum.photos/seed/park/120/80',
-      'tags': 'Environment;Cleaning',
-    },
-    {
-      'title': 'Tree Planting Event',
-      'distance': '1.1 km away',
-      'time': 'Today, 15:00',
-      'host': 'User456',
-      'capacity': '81/100',
-      'image': 'https://picsum.photos/seed/tree/120/80',
-      'tags': 'Environment',
-    },
-  ];
+  List<Event> _events = [];
 
   void _showCreateModal() {
     showModalBottomSheet<void>(
@@ -150,6 +135,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _events = ref.watch(userEventsProvider);
+
     return Scaffold(
       extendBody: true,
       backgroundColor: background,
@@ -164,7 +151,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                   children: [
                     const SizedBox(height: 8),
                     Text(
-                      'Hello, user!',
+                      'Hello, ${FirebaseAuth.instance.currentUser!.displayName}!',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
@@ -179,22 +166,30 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 24,
-                      ),
+                      padding: _events.isEmpty
+                          ? const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 24,
+                            )
+                          : EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.green.shade100,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        'No active events yet\n tap + to get started',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: _events.isEmpty
+                          ? Text(
+                              'No active events yet\n tap + to get started',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          : Image.network(
+                              _events.last.imageUrl,
+                              fit: BoxFit.cover,
+                              height: 100,
+                            ),
                     ),
 
                     const SizedBox(height: 18),
@@ -206,7 +201,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
                     Column(
                       children: _events.map((e) {
-                        final tags = (e['tags'] ?? '').split(';');
+                        final tags = e.tags;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(0),
@@ -219,13 +214,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => EventDetailsScreen(
-                                    title: e['title'] ?? '',
-                                    distance: e['distance'] ?? '',
-                                    time: e['time'] ?? '',
-                                    host: e['host'] ?? '',
-                                    capacity: e['capacity'] ?? '',
-                                    image: e['image'] ?? '',
-                                    tags: tags,
+                                    title: e.title,
+                                    //distance: e['distance'] ?? '',
+                                    time: e.time.day.toString(),
+                                    host: e.hostName,
+                                    capacity: e.capacity.toString(),
+                                    image: e.imageUrl,
+                                    tags: List<String>.from(tags),
                                   ),
                                 ),
                               );
@@ -241,11 +236,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                                       bottomLeft: Radius.circular(12),
                                     ),
                                     child: Image.network(
-                                      e['image'] ?? '',
-                                      width:
-                                          (MediaQuery.of(context).size.width *
-                                                  0.34)
-                                              .clamp(96.0, 160.0),
+                                      e.imageUrl,
+                                      width: (MediaQuery.of(context).size.width * 0.34).clamp(96.0, 160.0),
                                       height: 110,
                                       fit: BoxFit.cover,
                                     ),
@@ -258,13 +250,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                                         horizontal: 8,
                                       ),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Text(
-                                            e['title'] ?? '',
+                                            e.title,
                                             style: GoogleFonts.poppins(
                                               fontSize: 18,
                                               fontWeight: FontWeight.w700,
@@ -279,7 +269,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
-                                                e['host'] ?? '',
+                                                e.hostName,
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 14,
                                                 ),

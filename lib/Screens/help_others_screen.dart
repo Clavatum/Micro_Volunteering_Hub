@@ -8,19 +8,16 @@ class HelpOthersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Help Others',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: Text('Help Others', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
       ),
       body: Center(
         child: Text(
           'Help Others Screen',
-          style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700),
+          style: GoogleFonts.poppins(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

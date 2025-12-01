@@ -34,21 +34,10 @@ class EventDetailsScreen extends StatelessWidget {
               if (image.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    image,
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.network(image, width: double.infinity, height: 200, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 12),
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(title, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
 
               Row(
@@ -78,24 +67,15 @@ class EventDetailsScreen extends StatelessWidget {
 
               Wrap(
                 spacing: 8,
-                children: tags
-                    .map(
-                      (t) => Chip(
-                        label: Text(
-                          t,
-                          style: GoogleFonts.poppins(fontSize: 12),
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children: tags.map((t) => Chip(label: Text(t, style: GoogleFonts.poppins(fontSize: 12)))).toList(),
               ),
 
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Join action (placeholder)')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Join action (placeholder)')));
                 },
                 child: Text('Join', style: GoogleFonts.poppins()),
               ),

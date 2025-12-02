@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/providers/user_events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/map_screen.dart';
@@ -50,7 +51,6 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   ];
   String? _selectedDuration;
   List<Tag> _selectedCategories = [];
-  //TODO:GERİ GEL
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -146,7 +146,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'description': title,
       'people_needed': _peopleNeeded.toString(),
       'duration': _durationHours.toString(),
-      'starting_date': _startDateTime != null ? DateFormat('dd.MM.yyyy').format(_startDateTime!) : 'null',
+      'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
     };
     ref.read(userProvider.notifier).setUser(userData);
     ref.read(userEventsProvider.notifier).addEvent(event);

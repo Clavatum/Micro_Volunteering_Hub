@@ -1,9 +1,11 @@
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 
 class Event {
   final String title;
+  final String userId;
+  final String eventId;
+
   final DateTime time;
   final String hostName;
   final int capacity;
@@ -11,8 +13,11 @@ class Event {
   final List<Tag> tags;
   final LatLng coords;
   bool isClose;
+  int distanceToUser;
 
   Event({
+    required this.eventId,
+    required this.userId,
     required this.title,
     required this.time,
     required this.hostName,
@@ -20,6 +25,7 @@ class Event {
     required this.imageUrl,
     required this.tags,
     required this.coords,
+    this.distanceToUser = -1,
   }) : isClose = false;
 
   void setIsClose(double lat, double lon) {
@@ -30,11 +36,15 @@ class Event {
       lon2: coords.longitude,
     );
 
-    isClose = (dist < 100000);
+    distanceToUser = dist;
+
+    isClose = (dist < 100000000);
   }
 
   factory Event.fromJson(Map<String, dynamic> json, String docId) {
     return Event(
+      eventId: json['event_id'] ?? '',
+      userId: json['user_id'] ?? '',
       title: json['description'] ?? '',
       time: HelperFunctions.formatter.parse(json['starting_date'] ?? ''),
       hostName: json['host_name'] ?? 'unknown',

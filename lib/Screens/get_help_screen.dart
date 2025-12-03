@@ -14,11 +14,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:uuid/uuid.dart';
+import 'package:uuid/v4.dart';
 
 class GetHelpScreen extends ConsumerStatefulWidget {
-  const GetHelpScreen({Key? key}) : super(key: key);
+  const GetHelpScreen({Key? key, required this.updateLocalEvents}) : super(key: key);
+
+  final void Function() updateLocalEvents;
 
   @override
   ConsumerState<GetHelpScreen> createState() => _GetHelpScreenState();
@@ -51,28 +54,6 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   ];
   String? _selectedDuration;
   List<Tag> _selectedCategories = [];
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    return await Geolocator.getCurrentPosition();
-  }
 
   @override
   void initState() {
@@ -110,8 +91,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
     List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
-    //users position
-    Position userPos = _locationknowladge!['user_position'];
+    //users position -> sil
+    // Position userPos = _locationknowladge!['user_position'];
     //tapped position
     LatLng pos = _locationknowladge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
@@ -119,6 +100,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     var userName = FirebaseAuth.instance.currentUser!.displayName ?? 'unknown';
 
     Event event = Event(
+      eventId: Uuid().v4(),
+      userId: id,
       title: title,
       //distance: Geolocator.distanceBetween(37.4219999, -122.0840575, 37.4220011, -122.0866519).toStringAsFixed(2),
       coords: pos,
@@ -129,15 +112,9 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       tags: _selectedCategories,
     );
 
-    Map<String, String> userData = {
-      'id': id,
-      'user_name': FirebaseAuth.instance.currentUser!.displayName ?? 'unknown',
-      'user_mail': FirebaseAuth.instance.currentUser!.email!,
-      'user_latitude': userPos.latitude.toString(),
-      'user_longitude': userPos.longitude.toString(),
-    };
-
     Map<String, dynamic> eventData = {
+      'event_id': event.eventId,
+      'host_name': userName,
       'user_id': id,
       'selected_lat': pos.latitude.toString(),
       'selected_lon': pos.longitude.toString(),
@@ -148,10 +125,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'duration': _durationHours.toString(),
       'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
     };
-    ref.read(userProvider.notifier).setUser(userData);
     ref.read(userEventsProvider.notifier).addEvent(event);
 
-    await FirebaseFirestore.instance.collection('user_info').add(userData);
     await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
 
@@ -539,6 +514,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               });
 
                               await uploadFirestore();
+                              widget.updateLocalEvents;
                               setState(() {
                                 _isLoading = false;
                               });

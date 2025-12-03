@@ -14,17 +14,12 @@ class EventDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var userData = ref.watch(userProvider);
-    String _userLatS = userData['user_latitude']!;
-    String _userLonS = userData['user_longitude']!;
-    double _userLat = double.tryParse(_userLatS)!;
-    double _userLon = double.tryParse(_userLonS)!;
+    String _distance = '${event.distanceToUser}m';
+    Map<String, dynamic> _userData = ref.watch(userProvider);
+    List<Event> usersEvents = _userData['users_events'];
+    print(usersEvents);
 
-    String _distance = HelperFunctions.getStringDistance(
-      _userLat,
-      _userLon,
-      event,
-    );
+    bool canJoin = !usersEvents.contains(event);
 
     return Scaffold(
       appBar: AppBar(
@@ -92,15 +87,17 @@ class EventDetailsScreen extends ConsumerWidget {
 
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(
-                    const SnackBar(
-                      content: Text('Join action (placeholder)'),
-                    ),
-                  );
-                },
+                onPressed: canJoin
+                    ? () {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(
+                          const SnackBar(
+                            content: Text('Join action (placeholder)'),
+                          ),
+                        );
+                      }
+                    : null,
                 child: Text(
                   'Join',
                   style: GoogleFonts.poppins(),

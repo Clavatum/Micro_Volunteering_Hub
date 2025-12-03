@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 
 class UserEventsProvider extends StateNotifier<List<Event>> {
@@ -11,15 +10,6 @@ class UserEventsProvider extends StateNotifier<List<Event>> {
 
   void addEvent(Event e) {
     state = [...state, e];
-  }
-
-  double getDistance(Position p, Event e) {
-    return Geolocator.distanceBetween(
-      p.latitude,
-      p.longitude,
-      e.coords.latitude,
-      e.coords.longitude,
-    );
   }
 }
 

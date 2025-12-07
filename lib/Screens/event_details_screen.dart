@@ -16,10 +16,7 @@ class EventDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     String _distance = '${event.distanceToUser}m';
     Map<String, dynamic> _userData = ref.watch(userProvider);
-    List<Event> usersEvents = _userData['users_events'];
-    print(usersEvents);
-
-    bool canJoin = !usersEvents.contains(event);
+    bool canJoin = _userData['id'] != event.userId;
 
     return Scaffold(
       appBar: AppBar(

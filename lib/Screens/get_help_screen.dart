@@ -4,24 +4,20 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
-import 'package:micro_volunteering_hub/providers/user_events_provider.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/map_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:uuid/uuid.dart';
-import 'package:uuid/v4.dart';
 
 class GetHelpScreen extends ConsumerStatefulWidget {
-  const GetHelpScreen({Key? key, required this.updateLocalEvents}) : super(key: key);
-
-  final void Function() updateLocalEvents;
+  const GetHelpScreen({Key? key}) : super(key: key);
 
   @override
   ConsumerState<GetHelpScreen> createState() => _GetHelpScreenState();
@@ -91,9 +87,6 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
     List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
-    //users position -> sil
-    // Position userPos = _locationknowladge!['user_position'];
-    //tapped position
     LatLng pos = _locationknowladge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
     var title = _descriptionController.text;
@@ -103,7 +96,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       eventId: Uuid().v4(),
       userId: id,
       title: title,
-      //distance: Geolocator.distanceBetween(37.4219999, -122.0840575, 37.4220011, -122.0866519).toStringAsFixed(2),
+
       coords: pos,
       time: _startDateTime ?? DateTime.now(),
       hostName: userName,
@@ -113,6 +106,10 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     );
 
     Map<String, dynamic> eventData = {
+      'createdAt': DateTime.now(),
+      'expireAt': DateTime.now().add(
+        Duration(hours: _durationHours),
+      ),
       'event_id': event.eventId,
       'host_name': userName,
       'user_id': id,
@@ -125,7 +122,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'duration': _durationHours.toString(),
       'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
     };
-    ref.read(userEventsProvider.notifier).addEvent(event);
+    ref.read(userProvider.notifier).addUserEvent(event);
+    ref.read(eventsProvider.notifier).addEvent(event);
 
     await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
@@ -505,7 +503,24 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               if (_startDateTime == null) {
                                 ScaffoldMessenger.of(
                                   context,
+                                ).clearSnackBars();
+                                ScaffoldMessenger.of(
+                                  context,
                                 ).showSnackBar(const SnackBar(content: Text('Please pick a start date/time')));
+                                return;
+                              }
+
+                              if (_durationHours == 0) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).clearSnackBars();
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please pick duration'),
+                                  ),
+                                );
                                 return;
                               }
 
@@ -514,7 +529,6 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               });
 
                               await uploadFirestore();
-                              widget.updateLocalEvents;
                               setState(() {
                                 _isLoading = false;
                               });

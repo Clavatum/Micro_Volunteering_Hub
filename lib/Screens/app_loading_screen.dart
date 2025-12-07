@@ -65,10 +65,14 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       );
     }
 
-    var id = FirebaseAuth.instance.currentUser!.uid;
-    var userName = FirebaseAuth.instance.currentUser!.displayName ?? 'unknown';
+    var _user = FirebaseAuth.instance.currentUser!;
+
+    var id = _user.uid;
+    var userName = _user.displayName ?? 'unknown';
+    var photoUrl = _user.photoURL;
 
     Map<String, String> userData = {
+      'photo_url': photoUrl?? '',
       'id': id,
       'user_name': userName,
       'user_mail': FirebaseAuth.instance.currentUser!.email!,

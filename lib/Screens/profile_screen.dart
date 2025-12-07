@@ -1,136 +1,122 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'package:micro_volunteering_hub/helper_functions.dart';
+import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 import 'google_sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-// import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final ImagePicker _picker = ImagePicker();
-  File? _localImage;
-  bool _isUploading = false;
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String unsignedPresetName = 'microvolunteeringapp';
+  final _imagePicker = ImagePicker();
+  File? _image;
+  String? url;
 
-  int _selectedTab = 0;
-
-  final List<Map<String, String>> _myEvents = [
-    {
-      'date': 'Sun, Oct 26, 09:00',
-      'title': 'Community Garden Cleanup',
-      'image': 'https://picsum.photos/seed/garden/120/80',
-    },
-    {
-      'date': 'Mon, Nov 3, 13:00',
-      'title': 'Local Park Restoration',
-      'image': 'https://picsum.photos/seed/park/120/80',
-    },
-  ];
-
-  final List<Map<String, String>> _pastEvents = [
-    {
-      'date': 'Sat, Sep 12, 10:00',
-      'title': 'Beach Cleanup',
-      'image': 'https://picsum.photos/seed/beach/120/80',
-    },
-  ];
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? picked = await _picker.pickImage(
-        source: source,
-        maxWidth: 1200,
-        imageQuality: 85,
-      );
-      if (picked == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('No image selected.')));
-        return;
-      }
-
-      final File file = File(picked.path);
-      setState(() {
-        _localImage = file;
-      });
-
-      await _uploadAndSetProfileImage(file);
-    } catch (e) {
-      debugPrint('Image pick error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
-    }
-  }
-
-  Future<void> _uploadAndSetProfileImage(File file) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Not signed in.')));
-      return;
-    }
-
+  Future<void> _pickImageFromGallery() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
     setState(() {
-      _isUploading = true;
+      _image = File(image.path);
     });
+    await handleImage();
+  }
 
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload disabled in this build.')),
-      );
+  Future<void> _pickImageFromCamera() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.camera);
+    if (image == null) return;
+    setState(() {
+      _image = File(image.path);
+    });
+    await handleImage();
+  }
 
-      setState(() {
-        _localImage = null;
-      });
-    } catch (e) {
-      debugPrint('Upload error: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
-    } finally {
-      setState(() {
-        _isUploading = false;
-      });
+  Future<void> handleImage() async {
+    await uploadToCloudinary();
+
+    await FirebaseFirestore.instance
+        .collection('event_info')
+        .doc(
+          FirebaseAuth.instance.currentUser!.uid,
+        )
+        .set(
+          {
+            'photo_url': url,
+          },
+          SetOptions(merge: true),
+        );
+
+    if (url != null) {
+      ref.read(userProvider.notifier).updateUserProfile(url!);
     }
   }
 
-  void _showImageSourceSheet() {
-    showModalBottomSheet<void>(
+  void pickImage() {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Wrap(
+      builder: (ctx) => SizedBox(
+        height: 150,
+        child: Column(
           children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from gallery'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                await _pickImage(ImageSource.gallery);
+            SizedBox(width: double.infinity),
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromCamera();
+                Navigator.pop(context);
               },
+              child: Text('Take a photo'),
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a photo'),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                await _pickImage(ImageSource.camera);
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromGallery();
+                Navigator.pop(context);
               },
+              child: Text('Choose from gallery'),
             ),
           ],
         ),
       ),
     );
   }
+
+  Future<void> uploadToCloudinary() async {
+    if (_image == null) return;
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
+    var request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = unsignedPresetName
+      ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final jsonResp = json.decode(respStr);
+      this.url = jsonResp['secure_url'];
+    } else {
+      print('Upload failed with status: ${response.statusCode}');
+      return;
+    }
+  }
+
+  int _selectedTab = 0;
 
   Future<void> _logOut() async {
     try {
@@ -152,12 +138,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const Color primary = Color(0xFF00A86B);
     const Color background = Color(0xFFF2F2F3);
 
-    final User? user = FirebaseAuth.instance.currentUser;
-    final String displayName = user?.displayName ?? 'Anonymous';
-    final String role = 'Community Helper';
-    final String? photoUrl = user?.photoURL;
+    var userData = ref.watch(userProvider);
 
-    final events = _selectedTab == 0 ? _myEvents : _pastEvents;
+    List<Event> userEvents = userData['users_events'];
+    final String displayName = userData['user_name'] ?? 'Anonymous';
+    final String role = 'Community Helper';
+    String? photoUrl = userData['photo_url'];
 
     return Scaffold(
       backgroundColor: background,
@@ -193,44 +179,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: _showImageSourceSheet,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: primary,
-                          child: CircleAvatar(
-                            radius: 44,
-                            backgroundColor: Colors.white,
-                            backgroundImage: _localImage != null
-                                ? FileImage(_localImage!) as ImageProvider
-                                : (photoUrl != null
-                                      ? NetworkImage(photoUrl)
-                                      : null),
-                            child: _localImage == null && photoUrl == null
-                                ? Text(
-                                    displayName.isNotEmpty
-                                        ? displayName[0].toUpperCase()
-                                        : 'A',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      color: primary,
-                                    ),
-                                  )
-                                : null,
-                          ),
+                    onTap: pickImage,
+                    child: CircleAvatar(
+                      radius: 52,
+                      backgroundColor: primary,
+                      child: ClipOval(
+                        child: Image.network(
+                          photoUrl!,
+                          width: 104,
+                          height: 104,
+                          fit: BoxFit.cover,
                         ),
-                        if (_isUploading)
-                          const SizedBox(
-                            width: 96,
-                            height: 96,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -248,18 +208,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: Colors.black45,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Edit profile (TBD)')),
-                      );
-                    },
-                    icon: Icon(Icons.edit, color: primary),
-                    label: Text(
-                      'Edit',
-                      style: GoogleFonts.poppins(color: primary),
                     ),
                   ),
                 ],
@@ -280,7 +228,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         Text(
-                          '12',
+                          '${userEvents.length}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Events Created',
+                          style: GoogleFonts.poppins(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          //placeholder
+                          '0',
                           style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -295,32 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '49',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Hours Volunteered',
-                          style: GoogleFonts.poppins(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -329,12 +278,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 0
-                          ? primary
-                          : Colors.white,
-                      foregroundColor: _selectedTab == 0
-                          ? Colors.white
-                          : primary,
+                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
+                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -344,32 +289,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 1
-                          ? primary
-                          : Colors.white,
-                      foregroundColor: _selectedTab == 1
-                          ? Colors.white
-                          : primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () => setState(() => _selectedTab = 1),
-                    child: Text('Past Events', style: GoogleFonts.poppins()),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
             ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: events.length,
+              itemCount: userEvents.length,
               itemBuilder: (ctx, i) {
-                final e = events[i];
+                final e = userEvents[i];
                 return Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -378,25 +306,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(12),
                     title: Text(
-                      e['title'] ?? '',
+                      e.title,
                       style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
                     ),
                     subtitle: Text(
-                      e['date'] ?? '',
+                      HelperFunctions.formatter.format(e.time),
                       style: GoogleFonts.poppins(),
                     ),
                     trailing: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        e['image'] ?? '',
+                        e.imageUrl,
                         width: 80,
                         height: 60,
                         fit: BoxFit.cover,
                       ),
                     ),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Open event: ${e['title']}')),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailsScreen(
+                            event: e,
+                          ),
+                        ),
                       );
                     },
                   ),

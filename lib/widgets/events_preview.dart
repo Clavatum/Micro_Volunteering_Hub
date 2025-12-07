@@ -76,14 +76,17 @@ class EventsPreview extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.person, size: 16),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      events[index].hostName,
-                                      overflow: TextOverflow.clip,
-                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    SizedBox(
+                                      width: MediaQuery.of(context).size.width / 2.5,
+                                      child: Text(
+                                        events[index].hostName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(fontSize: 14),
+                                      ),
                                     ),
                                   ],
                                 ),

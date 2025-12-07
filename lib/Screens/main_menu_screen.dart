@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 import 'package:micro_volunteering_hub/widgets/last_event_preview.dart';
@@ -31,18 +34,20 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   @override
   void initState() {
     super.initState();
-    _handleClose();
+    //_handleClose();
   }
 
   Future<void> _handleClose() async {
-    _userData = ref.read(userProvider);
-
     try {
       await _getEventsFromFirebase();
       _userData = ref.read(userProvider);
       _setDistances();
       _setCloseEvents();
-      ref.read(userProvider.notifier).setUserEvents(_events!.where((e) => e.userId == _userData!['id']).toList());
+      ref
+          .read(userProvider.notifier)
+          .setUserEvents(
+            _events!.where((e) => e.userId == _userData!['id']).toList(),
+          );
     } catch (e) {
       debugPrint('Error loading events: $e');
     } finally {
@@ -52,15 +57,33 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
   }
 
-  void updateLocalEvents() {
-    setState(() {
-      _userData = ref.read(userProvider);
-    });
+  final now = Timestamp.fromDate(DateTime.now());
+
+  Future<void> deleteExpiredDoc() async {
+    final expiredDocs = await FirebaseFirestore.instance
+        .collection('event_info')
+        .where('expireAt', isLessThanOrEqualTo: now)
+        .get();
+
+    for (var doc in expiredDocs.docs) {
+      await doc.reference.delete();
+    }
   }
 
   Future<void> _getEventsFromFirebase() async {
-    final snap = await FirebaseFirestore.instance.collection('event_info').get();
+    await deleteExpiredDoc();
+
+    final snap = await FirebaseFirestore.instance.collection('event_info').orderBy('createdAt').get();
+
     _events = snap.docs.map((doc) => Event.fromJson(doc.data(), doc.id)).toList();
+
+    if (_events != null) {
+      ref
+          .read(
+            eventsProvider.notifier,
+          )
+          .setEvents(_events!);
+    }
   }
 
   void _setDistances() {
@@ -76,6 +99,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   void _setCloseEvents() {
     if (_events == null) return;
     _closeEvents = _events!.where((e) => e.isClose == true).toList();
+    ref.read(closeEventsProvider.notifier).setEvents(_closeEvents!);
   }
 
   void _showCreateModal() {
@@ -100,7 +124,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => GetHelpScreen(updateLocalEvents: updateLocalEvents)),
+                    MaterialPageRoute(builder: (_) => GetHelpScreen()),
                   );
                 },
                 icon: const Icon(Icons.help),
@@ -138,8 +162,17 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     );
   }
 
+  bool isLoading = true;
+
   @override
   Widget build(BuildContext context) {
+    _events = ref.watch(eventsProvider);
+    _handleClose();
+
+    setState(() {
+      isLoading = false;
+    });
+
     if (_isLoading) {
       return Scaffold(
         body: Center(
@@ -212,8 +245,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                       style: GoogleFonts.poppins(color: Colors.black54),
                     ),
                   ),
-
-                const SizedBox(height: 100),
               ],
             ),
           ),

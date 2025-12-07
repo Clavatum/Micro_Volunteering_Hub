@@ -23,9 +23,9 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  String cloudName = 'dm2k6xcne';
-  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
-  String unsignedPresetName = 'microvolunteeringapp';
+  String cloudName = 'KEY';
+  String APIkey = 'KEY';
+  String unsignedPresetName = 'KEY';
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
@@ -52,7 +52,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await uploadToCloudinary();
 
     await FirebaseFirestore.instance
-        .collection('event_info')
+        .collection('user_info')
         .doc(
           FirebaseAuth.instance.currentUser!.uid,
         )

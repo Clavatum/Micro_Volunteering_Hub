@@ -24,9 +24,9 @@ class GetHelpScreen extends ConsumerStatefulWidget {
 }
 
 class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
-  String cloudName = 'dm2k6xcne';
-  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
-  String unsignedPresetName = 'microvolunteeringapp';
+  String cloudName = 'KEY';
+  String APIkey = 'KEY';
+  String unsignedPresetName = 'KEY';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
 

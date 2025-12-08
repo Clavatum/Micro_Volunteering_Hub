@@ -23,9 +23,9 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  String cloudName = 'KEY';
-  String APIkey = 'KEY';
-  String unsignedPresetName = 'KEY';
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String unsignedPresetName = 'microvolunteeringapp';
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;

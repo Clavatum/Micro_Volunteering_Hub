@@ -24,9 +24,9 @@ class GetHelpScreen extends ConsumerStatefulWidget {
 }
 
 class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
-  String cloudName = 'KEY';
-  String APIkey = 'KEY';
-  String unsignedPresetName = 'KEY';
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String unsignedPresetName = 'microvolunteeringapp';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
 
@@ -107,7 +107,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
     Map<String, dynamic> eventData = {
       'createdAt': DateTime.now(),
-      'expireAt': DateTime.now().add(
+      'expireAt': _startDateTime!.add(
         Duration(hours: _durationHours),
       ),
       'event_id': event.eventId,

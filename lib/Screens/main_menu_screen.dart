@@ -57,9 +57,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
   }
 
-  final now = Timestamp.fromDate(DateTime.now());
-
   Future<void> deleteExpiredDoc() async {
+    final now = Timestamp.fromDate(DateTime.now());
+
     final expiredDocs = await FirebaseFirestore.instance
         .collection('event_info')
         .where('expireAt', isLessThanOrEqualTo: now)

@@ -1,25 +1,302 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/widgets/event_dialog.dart';
 
-class HelpOthersScreen extends StatelessWidget {
-  const HelpOthersScreen({Key? key}) : super(key: key);
+class HelpOthersScreen extends ConsumerStatefulWidget {
+  const HelpOthersScreen({super.key});
+
+  @override
+  ConsumerState<HelpOthersScreen> createState() => _HelpOthersScreenState();
+}
+
+class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
+  late MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerMapToUser();
+    });
+  }
+
+  void _centerMapToUser() {
+    final userData = ref.read(userProvider);
+
+    if (userData.isEmpty) {
+      return;
+    }
+
+    double? lat = double.tryParse(userData['user_latitude'] ?? '');
+    double? lon = double.tryParse(userData['user_longitude'] ?? '');
+
+    if (lat == null || lon == null) {
+      return;
+    }
+
+    _mapController.move(LatLng(lat, lon), 13.0);
+  }
+
+  void _showEventDialog(Event event) {
+    showDialog(
+      context: context,
+      builder: (context) => EventDialog(
+        event: event,
+        onJoin: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Joined: ${event.title}',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF00A86B),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _zoomIn() {
+    _mapController.move(
+      _mapController.camera.center,
+      _mapController.camera.zoom + 1,
+    );
+  }
+
+  void _zoomOut() {
+    _mapController.move(
+      _mapController.camera.center,
+      _mapController.camera.zoom - 1,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final events = ref.watch(eventsProvider);
+    final userData = ref.watch(userProvider);
+
+    double? userLat = double.tryParse(userData['user_latitude'] ?? '');
+    double? userLon = double.tryParse(userData['user_longitude'] ?? '');
+    const Color primary = Color(0xFF00A86B);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Help Others', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
-      ),
-      body: Center(
-        child: Text(
-          'Help Others Screen',
-          style: GoogleFonts.poppins(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-          ),
+        backgroundColor: primary,
+        elevation: 2,
+        title: Text(
+          'Help Others',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.white,
+          onPressed: () => Navigator.pop(context),
         ),
       ),
+      extendBodyBehindAppBar: true,
+
+      body: events.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.inbox, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No events available',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: userLat != null && userLon != null
+                        ? LatLng(userLat, userLon)
+                        : const LatLng(41.0082, 28.9784),
+                    initialZoom: 13.0,
+                    minZoom: 5.0,
+                    maxZoom: 18.0,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                      subdomains: const ['a', 'b', 'c'],
+                      maxZoom: 19,
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        if (userLat != null && userLon != null)
+                          Marker(
+                            point: LatLng(userLat, userLon),
+                            width: 50,
+                            height: 50,
+                            child: GestureDetector(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                      'Your location',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    backgroundColor: Colors.blue,
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withAlpha(220),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.blue.withAlpha(150),
+                                      blurRadius: 12,
+                                      spreadRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.person_pin_circle,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        ...events.map(
+                          (event) => Marker(
+                            point: event.coords,
+                            width: 50,
+                            height: 50,
+                            child: GestureDetector(
+                              onTap: () => _showEventDialog(event),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withAlpha(220),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withAlpha(150),
+                                      blurRadius: 12,
+                                      spreadRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                Positioned(
+                  top: 150,
+                  right: 16,
+                  child: Column(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(230),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(50),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            IconButton(
+                              onPressed: _zoomIn,
+                              icon: const Icon(
+                                Icons.add,
+                                color: Colors.black,
+                              ),
+                              iconSize: 20,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            Container(
+                              height: 1,
+                              width: 24,
+                              color: Colors.grey[300],
+                            ),
+                            IconButton(
+                              onPressed: _zoomOut,
+                              icon: const Icon(
+                                Icons.remove,
+                                color: Colors.black,
+                              ),
+                              iconSize: 20,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 24,
+                  right: 16,
+                  child: FloatingActionButton(
+                    backgroundColor: const Color(0xFF00A86B),
+                    mini: false,
+                    onPressed: _centerMapToUser,
+                    tooltip: 'Center on my location',
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.my_location,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 }

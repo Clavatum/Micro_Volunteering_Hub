@@ -1,20 +1,46 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/Screens/main_menu_screen.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'google_sign_in_screen.dart';
 
-class AppLoadingScreen extends StatefulWidget {
+class AppLoadingScreen extends ConsumerStatefulWidget {
   const AppLoadingScreen({Key? key}) : super(key: key);
 
   @override
-  State<AppLoadingScreen> createState() => _AppLoadingScreenState();
+  ConsumerState<AppLoadingScreen> createState() => _AppLoadingScreenState();
 }
 
-class _AppLoadingScreenState extends State<AppLoadingScreen>{
+class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
 
   @override
   void initState() {
@@ -23,23 +49,40 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>{
   }
 
   Future<void> _initApp() async {
-    //Wait for firebase to initialize
     await Firebase.initializeApp();
+    Position userp = await _determinePosition();
 
-    // Move to sign in screen
     if (!mounted) return;
 
     User? user = FirebaseAuth.instance.currentUser;
-    if(user == null){
+    if (user == null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
       );
-    }
-    else{
+    } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainMenuScreen()),
       );
     }
+
+    var _user = FirebaseAuth.instance.currentUser!;
+
+    var id = _user.uid;
+    var userName = _user.displayName ?? 'unknown';
+    var photoUrl = _user.photoURL;
+
+    Map<String, String> userData = {
+      'photo_url': photoUrl?? '',
+      'id': id,
+      'user_name': userName,
+      'user_mail': FirebaseAuth.instance.currentUser!.email!,
+      'user_latitude': userp.latitude.toString(),
+      'user_longitude': userp.longitude.toString(),
+    };
+
+    ref.read(userProvider.notifier).setUser(userData);
+
+    await FirebaseFirestore.instance.collection('user_info').doc(id).set(userData, SetOptions(merge: true));
   }
 
   @override
@@ -77,9 +120,9 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>{
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF5E35B1),
                 ),
-              )
+              ),
             ],
-          )
+          ),
         ),
       ),
     );

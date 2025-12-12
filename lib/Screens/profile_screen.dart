@@ -1,57 +1,341 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:micro_volunteering_hub/Screens/google_sign_in_screen.dart';
+import 'dart:convert';
+import 'dart:io';
 
-class ProfileScreen extends StatelessWidget {
-  Future<void> _logOut(context) async{
-    await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pop();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
-      (route) => false //This removes all previous routes
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'package:micro_volunteering_hub/helper_functions.dart';
+import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
+import 'google_sign_in_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
+  String unsignedPresetName = 'microvolunteeringapp';
+  final _imagePicker = ImagePicker();
+  File? _image;
+  String? url;
+
+  Future<void> _pickImageFromGallery() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+    setState(() {
+      _image = File(image.path);
+    });
+    await handleImage();
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    var image = await _imagePicker.pickImage(source: ImageSource.camera);
+    if (image == null) return;
+    setState(() {
+      _image = File(image.path);
+    });
+    await handleImage();
+  }
+
+  Future<void> handleImage() async {
+    await uploadToCloudinary();
+
+    await FirebaseFirestore.instance
+        .collection('user_info')
+        .doc(
+          FirebaseAuth.instance.currentUser!.uid,
+        )
+        .set(
+          {
+            'photo_url': url,
+          },
+          SetOptions(merge: true),
+        );
+
+    if (url != null) {
+      ref.read(userProvider.notifier).updateUserProfile(url!);
+    }
+  }
+
+  void pickImage() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SizedBox(
+        height: 150,
+        child: Column(
+          children: [
+            SizedBox(width: double.infinity),
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromCamera();
+                Navigator.pop(context);
+              },
+              child: Text('Take a photo'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _pickImageFromGallery();
+                Navigator.pop(context);
+              },
+              child: Text('Choose from gallery'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  const ProfileScreen({Key? key}) : super(key: key);
+  Future<void> uploadToCloudinary() async {
+    if (_image == null) return;
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+
+    var request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = unsignedPresetName
+      ..files.add(await http.MultipartFile.fromPath('file', _image!.path));
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      final respStr = await response.stream.bytesToString();
+      final jsonResp = json.decode(respStr);
+      this.url = jsonResp['secure_url'];
+    } else {
+      print('Upload failed with status: ${response.statusCode}');
+      return;
+    }
+  }
+
+  int _selectedTab = 0;
+
+  Future<void> _logOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('Logout error: $e');
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    Color primary = Color(0xFF5E35B1);
+    const Color primary = Color(0xFF00A86B);
+    const Color background = Color(0xFFF2F2F3);
+
+    var userData = ref.watch(userProvider);
+
+    List<Event> userEvents = userData['users_events'];
+    final String displayName = userData['user_name'] ?? 'Anonymous';
+    final String role = 'Community Helper';
+    String? photoUrl = userData['photo_url'];
+
     return Scaffold(
+      backgroundColor: background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
         title: Text(
           'Profile',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: GoogleFonts.poppins(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black54),
+            onPressed: () async {
+              await _logOut();
+            },
+            tooltip: 'Log out',
+          ),
+        ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Profile Screen',
-              style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: primary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                textStyle: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: CircleAvatar(
+                      radius: 52,
+                      backgroundColor: primary,
+                      child: ClipOval(
+                        child: Image.network(
+                          photoUrl!,
+                          width: 104,
+                          height: 104,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    displayName,
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    role,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.black45,
+                    ),
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.login, size: 20),
-              label: const Text('Log Out'),
-              onPressed: () async {
-                await _logOut(context);
+            ),
+            const SizedBox(height: 8),
+            // stats
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${userEvents.length}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Events Created',
+                          style: GoogleFonts.poppins(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          //placeholder
+                          '0',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Events Attended',
+                          style: GoogleFonts.poppins(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
+                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => setState(() => _selectedTab = 0),
+                    child: Text('My Events', style: GoogleFonts.poppins()),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ListView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: userEvents.length,
+              itemBuilder: (ctx, i) {
+                final e = userEvents[i];
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    title: Text(
+                      e.title,
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      HelperFunctions.formatter.format(e.time),
+                      style: GoogleFonts.poppins(),
+                    ),
+                    trailing: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        e.imageUrl,
+                        width: 80,
+                        height: 60,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => EventDetailsScreen(
+                            event: e,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
               },
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

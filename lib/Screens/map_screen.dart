@@ -12,8 +12,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen>
-    with SingleTickerProviderStateMixin {
+class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMixin {
   Position? _currentPosition;
   final MapController _mapController = MapController();
   double _currentZoom = 13;
@@ -104,9 +103,7 @@ class _MapScreenState extends State<MapScreen>
       setState(() {
         _currentZoom += 1;
       });
-      final center =
-          _currentCenter ??
-          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
@@ -116,9 +113,7 @@ class _MapScreenState extends State<MapScreen>
       setState(() {
         _currentZoom -= 1;
       });
-      final center =
-          _currentCenter ??
-          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
@@ -246,8 +241,7 @@ class _MapScreenState extends State<MapScreen>
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 userAgentPackageName: userAgent,
                 maxZoom: 19,
               ),
@@ -516,7 +510,8 @@ class _MapScreenState extends State<MapScreen>
                                 child: ElevatedButton(
                                   onPressed: () {
                                     Navigator.of(context).pop({
-                                      'position': _currentPosition,
+                                      'user_position': _currentPosition,
+                                      'position': tappedPos,
                                       'address': _selectedAddress,
                                     });
                                   },

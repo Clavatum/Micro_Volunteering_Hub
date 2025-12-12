@@ -1,50 +1,55 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/helper_functions.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/map_screen.dart';
-import 'package:uuid/uuid.dart';
-import 'package:uuid/v4.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:uuid/uuid.dart';
 
-class GetHelpScreen extends StatefulWidget {
+class GetHelpScreen extends ConsumerStatefulWidget {
   const GetHelpScreen({Key? key}) : super(key: key);
 
   @override
-  State<GetHelpScreen> createState() => _GetHelpScreenState();
+  ConsumerState<GetHelpScreen> createState() => _GetHelpScreenState();
 }
 
-class _GetHelpScreenState extends State<GetHelpScreen> {
-  String cloudName = 'CLOUD_NAME';
-  String APIkey = 'API_KEY';
+class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
+  String cloudName = 'dm2k6xcne';
+  String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
   String unsignedPresetName = 'microvolunteeringapp';
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _descriptionController = TextEditingController();
 
   DateTime? _startDateTime;
-  int _durationHours = 1;
+  final int _durationHours = 1;
   int _peopleNeeded = 1;
-  String? _category;
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
-  Map<String, dynamic>? location_knowladge;
+  Map<String, dynamic>? _locationknowladge;
 
-  final List<String> _categories = [
-    'Food distribution',
-    'Cleaning',
-    'Teaching',
-    'Medical',
-    'Logistics',
-    'Other',
+  final List<String> _durationOptions = [
+    '15 minutes',
+    '30 minutes',
+    '1 hour',
+    '2 hours',
+    '4 hours',
+    '8 hours',
+    '1 day',
+    '2 days',
   ];
+  String? _selectedDuration;
+  List<Tag> _selectedCategories = [];
 
   @override
   void initState() {
@@ -59,9 +64,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
 
   Future<void> uploadToCloudinary() async {
     if (_image == null) return;
-    final url = Uri.parse(
-      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
-    );
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
     var request = http.MultipartRequest('POST', url)
       ..fields['upload_preset'] = unsignedPresetName
@@ -80,26 +83,53 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
   }
 
   Future<void> uploadFirestore() async {
-    if (location_knowladge == null ||
-        location_knowladge!['position'] == null ||
-        url == null)
-      return;
+    if (_locationknowladge == null || _locationknowladge!['position'] == null || url == null) return;
 
-    Position pos = location_knowladge!['position'];
+    List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
-    Map<String, String> data = {
-      // 'user_mail': FirebaseAuth.instance.currentUser!.email!,
-      'id': Uuid().v4(),
-      'selectedLat': pos.latitude.toString(),
-      'selectedLon': pos.longitude.toString(),
+    LatLng pos = _locationknowladge!['position'];
+    var id = FirebaseAuth.instance.currentUser!.uid;
+    var title = _descriptionController.text;
+    var userName = FirebaseAuth.instance.currentUser!.displayName ?? 'unknown';
+
+    Event event = Event(
+      eventId: Uuid().v4(),
+      userId: id,
+      title: title,
+
+      coords: pos,
+      time: _startDateTime ?? DateTime.now(),
+      hostName: userName,
+      capacity: _peopleNeeded,
+      imageUrl: url ?? 'not selected',
+      tags: _selectedCategories,
+    );
+
+    Map<String, dynamic> eventData = {
+      'createdAt': DateTime.now(),
+      'expireAt': _startDateTime!.add(
+        Duration(hours: _durationHours),
+      ),
+      'event_id': event.eventId,
+      'host_name': userName,
+      'user_id': id,
+      'selected_lat': pos.latitude.toString(),
+      'selected_lon': pos.longitude.toString(),
       'user_image_url': url!,
+      'categories': selectedCategoryNames,
+      'description': title,
+      'people_needed': _peopleNeeded.toString(),
+      'duration': _durationHours.toString(),
+      'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
     };
-    await FirebaseFirestore.instance.collection('user_info').add(data);
+    ref.read(userProvider.notifier).addUserEvent(event);
+    ref.read(eventsProvider.notifier).addEvent(event);
+
+    await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
 
   Future<void> handleImage() async {
     await uploadToCloudinary();
-    await uploadFirestore();
   }
 
   Future<void> _pickImageFromGallery() async {
@@ -163,13 +193,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
     );
     if (pickedTime == null) return;
     setState(() {
-      _startDateTime = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-        pickedTime.hour,
-        pickedTime.minute,
-      );
+      _startDateTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
     });
   }
 
@@ -180,19 +204,21 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  bool _isLoading = false;
+
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF5E35B1);
+    final List<Tag> _categories = Tag.values;
+
+    const Color primary = Color(0xFF00A86B);
+    const Color bg = Color(0xFFF2F2F3);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primary,
         elevation: 2,
         title: Text(
           'Get Help',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -201,13 +227,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFf6d365), Color(0xFFfda085)],
-          ),
-        ),
+        color: bg,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -228,12 +248,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       child: _image != null
                           ? Image.file(_image!, fit: BoxFit.cover)
                           : Center(
-                              child: Text(
-                                'Pictures placeholder',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                ),
-                              ),
+                              child: Text('Pictures placeholder', style: GoogleFonts.poppins(color: Colors.white70)),
                             ),
                       onTap: () => pickImage(),
                     ),
@@ -243,11 +258,7 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
 
                   Text(
                     'Event description',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -256,25 +267,17 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: .95),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
                       hintText: 'Describe the event...',
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Please enter a description'
-                        : null,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a description' : null,
                     style: GoogleFonts.poppins(color: Colors.black87),
                   ),
                   const SizedBox(height: 16),
 
                   Text(
                     'Location',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
 
                   const SizedBox(height: 8),
@@ -288,22 +291,18 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                     ),
                     child: InkWell(
                       onTap: () async {
-                        Map<String, dynamic> map = await Navigator.of(context)
-                            .push(
-                              MaterialPageRoute(
-                                builder: (context) => MapScreen(),
-                              ),
-                            );
+                        Map<String, dynamic> map = await Navigator.of(
+                          context,
+                        ).push(MaterialPageRoute(builder: (context) => MapScreen()));
                         setState(() {
-                          location_knowladge = map;
+                          _locationknowladge = map;
                         });
                       },
                       child: Center(
                         child: Text(
-                          location_knowladge == null ||
-                                  location_knowladge!['position'] == null
+                          _locationknowladge == null || _locationknowladge!['position'] == null
                               ? 'Tap to select a location'
-                              : '${location_knowladge!['address']}',
+                              : '${_locationknowladge!['address']}',
                           style: GoogleFonts.poppins(
                             color: Colors.white70,
                           ).copyWith(fontWeight: FontWeight.bold, fontSize: 14),
@@ -315,53 +314,100 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
 
                   Text(
                     'Category',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: .95),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _category,
-                        hint: Text(
-                          'Select category',
-                          style: GoogleFonts.poppins(color: primary),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
-                        isExpanded: true,
-                        items: _categories
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(
-                                  c,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _category = v),
+                        onPressed: () async {
+                          // show multi-select sheet
+                          final selected = await showModalBottomSheet<List<Tag>>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (ctx) {
+                              final temp = _selectedCategories;
+                              return StatefulBuilder(
+                                builder: (context, setStateModal) {
+                                  return Padding(
+                                    padding: MediaQuery.of(context).viewInsets,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Select categories',
+                                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          ..._categories.map((c) {
+                                            final checked = temp.contains(c);
+                                            return CheckboxListTile(
+                                              value: checked,
+                                              title: Text(c.name, style: GoogleFonts.poppins()),
+                                              onChanged: (v) => setStateModal(() {
+                                                if (v == true)
+                                                  temp.add(c);
+                                                else
+                                                  temp.remove(c);
+                                              }),
+                                            );
+                                          }),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(ctx).pop(_selectedCategories),
+                                                child: Text('Cancel', style: GoogleFonts.poppins()),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: () => Navigator.of(ctx).pop(temp),
+                                                child: Text('Done', style: GoogleFonts.poppins()),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                          if (selected != null) {
+                            setState(() => _selectedCategories = selected);
+                          }
+                        },
+                        child: Text('Select Categories', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _selectedCategories.isEmpty
+                              ? 'No categories selected'
+                              : '${_selectedCategories.length} selected',
+                          style: GoogleFonts.poppins(color: Colors.black54),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  if (_selectedCategories.isNotEmpty)
+                    Wrap(spacing: 8, children: _selectedCategories.map((c) => Chip(label: Text(c.name))).toList()),
                   const SizedBox(height: 16),
 
                   Text(
                     'Start (date & time)',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -369,18 +415,13 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(
-                              alpha: .95,
-                            ),
+                            backgroundColor: Colors.white.withValues(alpha: .95),
                             foregroundColor: primary,
                           ),
                           onPressed: () => _pickStartDateTime(context),
                           child: Text(
                             _formatStart(),
-                            style: GoogleFonts.poppins(
-                              color: primary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: GoogleFonts.poppins(color: primary, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ),
@@ -389,84 +430,60 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                   const SizedBox(height: 16),
 
                   Text(
-                    'Duration (hours)',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    'Duration',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => setState(
-                          () => _durationHours = (_durationHours - 1).clamp(
-                            1,
-                            999,
-                          ),
-                        ),
-                        icon: Icon(Icons.remove_circle_outline, color: primary),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$_durationHours hrs',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => setState(
-                          () => _durationHours = (_durationHours + 1).clamp(
-                            1,
-                            999,
-                          ),
-                        ),
-                        icon: Icon(Icons.add_circle_outline, color: primary),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _selectedDuration,
+                      isExpanded: true,
+                      decoration: const InputDecoration.collapsed(hintText: ''),
+                      hint: Text('Select duration', style: GoogleFonts.poppins(color: primary)),
+                      items: _durationOptions
+                          .map(
+                            (d) => DropdownMenuItem(
+                              value: d,
+                              child: Text(d, style: GoogleFonts.poppins()),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedDuration = v),
+                      validator: (v) => (v == null || v.isEmpty) ? 'Please select duration' : null,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
                   Text(
                     'People needed',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => setState(
-                          () =>
-                              _peopleNeeded = (_peopleNeeded - 1).clamp(1, 999),
-                        ),
-                        icon: Icon(Icons.remove_circle_outline, color: primary),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$_peopleNeeded',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => setState(
-                          () =>
-                              _peopleNeeded = (_peopleNeeded + 1).clamp(1, 999),
-                        ),
-                        icon: Icon(Icons.add_circle_outline, color: primary),
-                      ),
-                    ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _peopleNeeded,
+                      isExpanded: true,
+                      decoration: const InputDecoration.collapsed(hintText: ''),
+                      items: List.generate(30, (i) => i + 1)
+                          .map(
+                            (n) => DropdownMenuItem(
+                              value: n,
+                              child: Text(n.toString(), style: GoogleFonts.poppins()),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _peopleNeeded = v ?? 1),
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -477,39 +494,51 @@ class _GetHelpScreenState extends State<GetHelpScreen> {
                         backgroundColor: primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
-                        textStyle: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
-                      onPressed: () async {
-                        if (!(_formKey.currentState?.validate() ?? false))
-                          return;
-                        if (_startDateTime == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please pick a start date/time'),
-                            ),
-                          );
-                          return;
-                        }
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              if (!(_formKey.currentState?.validate() ?? false)) return;
+                              if (_startDateTime == null) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).clearSnackBars();
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(const SnackBar(content: Text('Please pick a start date/time')));
+                                return;
+                              }
 
-                        final event = {
-                          'description': _descriptionController.text.trim(),
-                          'start': _startDateTime!.toIso8601String(),
-                          'duration_hours': _durationHours,
-                          'people_needed': _peopleNeeded,
-                          'created_at': DateTime.now().toIso8601String(),
-                        };
+                              if (_durationHours == 0) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).clearSnackBars();
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please pick duration'),
+                                  ),
+                                );
+                                return;
+                              }
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Event saved (local only)'),
-                          ),
-                        );
-                        Navigator.pop(context, event);
-                      },
-                      child: Text('Submit'),
+                              setState(() {
+                                _isLoading = true;
+                              });
+
+                              await uploadFirestore();
+                              setState(() {
+                                _isLoading = false;
+                              });
+
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(const SnackBar(content: Text('Event saved')));
+                              Navigator.pop(context);
+                            },
+                      child: _isLoading ? CircularProgressIndicator() : Text('Submit'),
                     ),
                   ),
                 ],

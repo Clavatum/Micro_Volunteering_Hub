@@ -142,7 +142,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final String displayName = userData['user_name'] ?? 'Anonymous';
     final String role = 'Community Helper';
     String? photoUrl = userData['photo_url'];
-
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -182,12 +181,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       radius: 52,
                       backgroundColor: primary,
                       child: ClipOval(
-                        child: (photoUrl != null && photoUrl.isNotEmpty) ? Image.network(
-                          photoUrl,
+                        child: Image.network(
+                          photoUrl!,
                           width: 104,
                           height: 104,
                           fit: BoxFit.cover,
-                        ) : Icon(Icons.person, size: 64, color: Colors.white)
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(Icons.person, size: 64, color: Colors.white);
+                          },
+                        )
                       ),
                     ),
                   ),
@@ -318,6 +320,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         width: 80,
                         height: 60,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 80, height: 60,
+                            color: Colors.green,
+                            child: Icon(Icons.event, size: 48, color: Colors.black),
+                          );
+                        },
                       ),
                     ),
                     onTap: () {

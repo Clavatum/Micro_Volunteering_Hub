@@ -38,7 +38,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
-  Map<String, dynamic>? _locationknowladge;
+  Map<String, dynamic>? _locationknowledge;
 
   final List<String> _durationOptions = [
     '15 minutes',
@@ -85,11 +85,11 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   }
 
   Future<bool> uploadFirestore() async {
-    if (_locationknowladge == null || _locationknowladge!['position'] == null || url == null) return false;
+    if (_locationknowledge == null || _locationknowledge!['position'] == null) return false;
 
     List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
-    LatLng pos = _locationknowladge!['position'];
+    LatLng pos = _locationknowledge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
     var title = _descriptionController.text;
     var userName = FirebaseAuth.instance.currentUser!.displayName ?? 'unknown';
@@ -107,22 +107,17 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       tags: _selectedCategories,
     );
 
-    Map<String, String> eventData = {
-      'createdAt': DateTime.now().toString(),
-      'expireAt': _startDateTime!.add(
-        Duration(hours: _durationHours),
-      ).toString(),
-      'event_id': event.eventId,
+    Map<String, dynamic> eventData = {
       'host_name': userName,
       'user_id': id,
-      'selected_lat': pos.latitude.toString(),
-      'selected_lon': pos.longitude.toString(),
-      'user_image_url': url!,
-      'categories': selectedCategoryNames.toString(),
+      'selected_lat': pos.latitude,
+      'selected_lon': pos.longitude,
+      'user_image_url': url ?? "",
+      'categories': selectedCategoryNames,
       'description': title,
-      'people_needed': _peopleNeeded.toString(),
-      'duration': _durationHours.toString(),
-      'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
+      'people_needed': _peopleNeeded,
+      'duration': _durationHours,
+      'starting_date': _startDateTime != null ? _startDateTime!.toUtc().toString() : "null",
     };
     var apiResponse = await createEventAPI(eventData);
     if (apiResponse["ok"]){
@@ -131,7 +126,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       return true;
     }
     else{
-      showGlobalSnackBar("Creating event has failed. (API Error)");
+      showGlobalSnackBar(apiResponse["msg"]);
       return false;
     }
 
@@ -305,14 +300,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           context,
                         ).push(MaterialPageRoute(builder: (context) => MapScreen()));
                         setState(() {
-                          _locationknowladge = map;
+                          _locationknowledge = map;
                         });
                       },
                       child: Center(
                         child: Text(
-                          _locationknowladge == null || _locationknowladge!['position'] == null
+                          _locationknowledge == null || _locationknowledge!['position'] == null
                               ? 'Tap to select a location'
-                              : '${_locationknowladge!['address']}',
+                              : '${_locationknowledge!['address']}',
                           style: GoogleFonts.poppins(
                             color: Colors.white70,
                           ).copyWith(fontWeight: FontWeight.bold, fontSize: 14),
@@ -445,7 +440,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -475,7 +470,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -510,13 +505,19 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           ? null
                           : () async {
                               if (!(_formKey.currentState?.validate() ?? false)) return;
+
+                              if (_locationknowledge == null){
+                                showGlobalSnackBar("Please pick a location");
+                                return;
+                              }
+
                               if (_startDateTime == null) {
                                 showGlobalSnackBar("Please pick a start date/time");
                                 return;
                               }
 
                               if (_durationHours == 0) {
-                                showGlobalSnackBar("Please pick duration");
+                                showGlobalSnackBar("Please pick a duration");
                                 return;
                               }
 

@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
@@ -38,43 +37,22 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   Future<void> _loadData() async {
-    try {
-      await _getEventsFromFirebase();
-      _userData = ref.read(userProvider);
-      _setDistances();
-      _setCloseEvents();
-      ref.read(userProvider.notifier).setUserEvents(
-        _events!.where((e) => e.userId == _userData!['id']).toList(),
-      );
-    } catch (e) {
-      debugPrint('Error loading events: $e');
-    } finally {
-      if (mounted){
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> deleteExpiredDoc() async {
-    final now = Timestamp.fromDate(DateTime.now());
-
-    final expiredDocs = await FirebaseFirestore.instance
-        .collection('event_info')
-        .where('expireAt', isLessThanOrEqualTo: now)
-        .get();
-
-    for (var doc in expiredDocs.docs) {
-      await doc.reference.delete();
+    await _getEventsFromFirebase();
+    _userData = ref.read(userProvider);
+    _setDistances();
+    _setCloseEvents();
+    ref.read(userProvider.notifier).setUserEvents(
+      _events!.where((e) => e.userId == _userData!['id']).toList(),
+    );
+    if (mounted){
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _getEventsFromFirebase() async {
-    await deleteExpiredDoc();
-
     final snap = await FirebaseFirestore.instance.collection('event_info').orderBy('createdAt').get();
 
     _events = snap.docs.map((doc) => Event.fromJson(doc.data(), doc.id)).toList();
-
     if (_events != null) {
       ref
           .read(
@@ -250,7 +228,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         onPressed: _showCreateModal,
         shape: const CircleBorder(),
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white, size:32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
@@ -267,6 +245,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                   onPressed: () => setState(() => _navIndex = 0),
                   icon: Icon(
                     Icons.home,
+                    size: 32,
                     color: _navIndex == 0 ? primary : Colors.black54,
                   ),
                 ),
@@ -279,6 +258,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                   },
                   icon: Icon(
                     Icons.person,
+                    size: 32,
                     color: _navIndex == 1 ? primary : Colors.black54,
                   ),
                 ),

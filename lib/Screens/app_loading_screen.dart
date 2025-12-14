@@ -66,7 +66,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     var id = user.uid;
     var userName = user.displayName ?? 'unknown';
     var photoUrl = user.photoURL;
-    print(photoUrl);
     Map<String, String> userData = {
       'photo_url': photoUrl?? '',
       'id': id,

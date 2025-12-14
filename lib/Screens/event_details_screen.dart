@@ -32,11 +32,23 @@ class EventDetailsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (event.imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(event.imageUrl, width: double.infinity, height: 200, fit: BoxFit.cover),
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  event.imageUrl, 
+                  width: double.infinity, 
+                  height: 200, 
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: 200,
+                      color: Colors.green,
+                      child: Center(child: Icon(Icons.event, size: 64,),),
+                    );
+                  },
+                )
+              ),
               const SizedBox(height: 12),
               Text(event.title, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),

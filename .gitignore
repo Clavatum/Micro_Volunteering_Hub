@@ -48,4 +48,8 @@ app.*.map.json
 /android/app/google-services.json
 /android/build
 /android/app/build.gradle.kts
+lib/backend/server/__pycache__
 .vscode
+
+#Keys (IMPORTANT!!!)
+lib/backend/server/service-account-file.json

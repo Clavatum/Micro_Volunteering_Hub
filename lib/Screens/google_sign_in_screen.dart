@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'main_menu_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 
 String clientID =
     "615113923331-7si1neuaitp2q6seah3085ks5n3vuo0h.apps.googleusercontent.com";
@@ -41,9 +43,11 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
     unawaited(googleSignIn.initialize(clientId: clientID));
 
     _auth.authStateChanges().listen((user) {
-      setState(() {
-        _user = user;
-      });
+      if (mounted){
+        setState(() {
+          _user = user;
+        });
+      }
     });
     _animController.forward();
   }
@@ -54,25 +58,13 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
     super.dispose();
   }
 
-  void _snackBarMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: primary,
-      ),
-    );
-  }
-
   Future<void> _logInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
           .authenticate();
 
       if (googleUser == null) {
-        _snackBarMessage(context, "Error while logging in.");
+        showGlobalSnackBar("Login cancelled");
         return;
       }
 
@@ -82,33 +74,22 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       );
       final UserCredential userCredential = await FirebaseAuth.instance
           .signInWithCredential(credential);
-
       if (userCredential.user != null) {
-        _snackBarMessage(context, "Login successful.");
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-          (route) => false,
-        );
+        showGlobalSnackBar("Login successful.");
       } else {
-        _snackBarMessage(context, "Error while logging in.");
+        showGlobalSnackBar("Firebase login failed");
       }
     } on PlatformException catch (e) {
       if (e.code == "network_error") {
-        _snackBarMessage(
-          context,
-          "Network error, please check your internet connection.",
-        );
+        showGlobalSnackBar("Network error, please check your internet connection.");
       }
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        _snackBarMessage(context, "Sign in cancelled by user");
+        showGlobalSnackBar("Sign in cancelled by user");
       }
     } catch (e) {
-      debugPrint(e.toString());
-      _snackBarMessage(
-        context,
-        "Something went wrong while logging in with Google.",
-      );
+      print("Error in _logInWithGoogle(): ${e.toString()}");
+      showGlobalSnackBar("Something went wrong while logging in with Google.",);
     }
   }
 

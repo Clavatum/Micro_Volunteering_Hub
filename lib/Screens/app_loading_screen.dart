@@ -19,6 +19,9 @@ class AppLoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
+  late final Future<void> _initFuture;
+  User? _initialUser;
+  bool _authResolved = false;
   Future<Position> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -45,32 +48,25 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
   @override
   void initState() {
     super.initState();
-    _initApp();
+    _initFuture = _initApp();
   }
 
   Future<void> _initApp() async {
     await Firebase.initializeApp();
     Position userp = await _determinePosition();
+    _initialUser = FirebaseAuth.instance.currentUser;
+    _authResolved = true;
 
-    if (!mounted) return;
+    if (!mounted || _initialUser == null) return;
 
-    User? user = FirebaseAuth.instance.currentUser;
+    final User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-      );
+      return;
     }
-
-    var _user = FirebaseAuth.instance.currentUser!;
-
-    var id = _user.uid;
-    var userName = _user.displayName ?? 'unknown';
-    var photoUrl = _user.photoURL;
-
+    var id = user.uid;
+    var userName = user.displayName ?? 'unknown';
+    var photoUrl = user.photoURL;
+    print(photoUrl);
     Map<String, String> userData = {
       'photo_url': photoUrl?? '',
       'id': id,
@@ -87,44 +83,70 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFf6d365), Color(0xFFfda085)],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Loading",
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF5E35B1),
-                ),
-              ),
-              SizedBox(height: 20),
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
-              ),
-              SizedBox(height: 40),
-              Text(
-                "Initializing firebase",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF5E35B1),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FutureBuilder(
+      future: _initFuture,
+      builder: (context, snapshot){
+        if(snapshot.connectionState != ConnectionState.done){
+         return loadingScreen();
+        }
+
+        return StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          initialData: _initialUser,
+          builder:(context, snapshot) {
+            if(!_authResolved){
+              return loadingScreen();
+            }
+            if (!snapshot.hasData){
+              return const GoogleSignInScreen();
+            }
+            return const MainMenuScreen();
+          },
+        );
+      }
     );
   }
+}
+
+//Loading screen
+Widget loadingScreen(){
+  return Scaffold(
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFf6d365), Color(0xFFfda085)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Loading",
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E35B1),
+              ),
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
+            ),
+            SizedBox(height: 40),
+            Text(
+              "Initializing application",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E35B1),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

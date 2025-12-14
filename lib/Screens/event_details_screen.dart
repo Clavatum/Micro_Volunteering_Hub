@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 
 class EventDetailsScreen extends ConsumerWidget {
   final Event event;
@@ -86,13 +87,7 @@ class EventDetailsScreen extends ConsumerWidget {
               ElevatedButton(
                 onPressed: canJoin
                     ? () {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(
-                          const SnackBar(
-                            content: Text('Join action (placeholder)'),
-                          ),
-                        );
+                        showGlobalSnackBar("Join action (placeholder)");
                       }
                     : null,
                 child: Text(

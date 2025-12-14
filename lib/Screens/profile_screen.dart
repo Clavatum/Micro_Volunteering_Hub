@@ -32,7 +32,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickImageFromGallery() async {
     var image = await _imagePicker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
+    if (image == null || !mounted) return;
     setState(() {
       _image = File(image.path);
     });
@@ -41,7 +41,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickImageFromCamera() async {
     var image = await _imagePicker.pickImage(source: ImageSource.camera);
-    if (image == null) return;
+    if (image == null || !mounted) return;
     setState(() {
       _image = File(image.path);
     });
@@ -97,7 +97,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> uploadToCloudinary() async {
-    if (_image == null) return;
+    if (_image == null || !mounted) return;
     final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
     var request = http.MultipartRequest('POST', url)
@@ -122,17 +122,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       await FirebaseAuth.instance.signOut();
       await GoogleSignIn.instance.signOut();
+      Navigator.pop(context);
     } catch (e) {
       debugPrint('Logout error: $e');
     }
-
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
-      (route) => false,
-    );
   }
 
+  Future<void> userAvatar() async {
+
+  }
   @override
   Widget build(BuildContext context) {
     const Color primary = Color(0xFF00A86B);
@@ -184,12 +182,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       radius: 52,
                       backgroundColor: primary,
                       child: ClipOval(
-                        child: Image.network(
-                          photoUrl!,
+                        child: (photoUrl != null && photoUrl.isNotEmpty) ? Image.network(
+                          photoUrl,
                           width: 104,
                           height: 104,
                           fit: BoxFit.cover,
-                        ),
+                        ) : Icon(Icons.person, size: 64, color: Colors.white)
                       ),
                     ),
                   ),

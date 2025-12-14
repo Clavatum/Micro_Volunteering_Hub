@@ -34,26 +34,24 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   @override
   void initState() {
     super.initState();
-    //_handleClose();
+    _loadData();
   }
 
-  Future<void> _handleClose() async {
+  Future<void> _loadData() async {
     try {
       await _getEventsFromFirebase();
       _userData = ref.read(userProvider);
       _setDistances();
       _setCloseEvents();
-      ref
-          .read(userProvider.notifier)
-          .setUserEvents(
-            _events!.where((e) => e.userId == _userData!['id']).toList(),
-          );
+      ref.read(userProvider.notifier).setUserEvents(
+        _events!.where((e) => e.userId == _userData!['id']).toList(),
+      );
     } catch (e) {
       debugPrint('Error loading events: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted){
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -167,11 +165,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   @override
   Widget build(BuildContext context) {
     _events = ref.watch(eventsProvider);
-    _handleClose();
-
-    setState(() {
-      isLoading = false;
-    });
 
     if (_isLoading) {
       return Scaffold(
@@ -181,6 +174,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       );
     }
 
+    final user = FirebaseAuth.instance.currentUser;
+    final name = user?.displayName ?? "Guest";
     return Scaffold(
       extendBody: true,
       backgroundColor: background,
@@ -192,7 +187,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, ${FirebaseAuth.instance.currentUser!.displayName}!',
+                  'Hello, $name!',
                   overflow: TextOverflow.clip,
                   style: GoogleFonts.poppins(
                     fontSize: 28,

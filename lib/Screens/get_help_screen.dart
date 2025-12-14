@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
@@ -14,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:uuid/uuid.dart';
 
 class GetHelpScreen extends ConsumerStatefulWidget {
@@ -82,8 +84,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     }
   }
 
-  Future<void> uploadFirestore() async {
-    if (_locationknowladge == null || _locationknowladge!['position'] == null || url == null) return;
+  Future<bool> uploadFirestore() async {
+    if (_locationknowladge == null || _locationknowladge!['position'] == null || url == null) return false;
 
     List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
@@ -105,27 +107,35 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       tags: _selectedCategories,
     );
 
-    Map<String, dynamic> eventData = {
-      'createdAt': DateTime.now(),
+    Map<String, String> eventData = {
+      'createdAt': DateTime.now().toString(),
       'expireAt': _startDateTime!.add(
         Duration(hours: _durationHours),
-      ),
+      ).toString(),
       'event_id': event.eventId,
       'host_name': userName,
       'user_id': id,
       'selected_lat': pos.latitude.toString(),
       'selected_lon': pos.longitude.toString(),
       'user_image_url': url!,
-      'categories': selectedCategoryNames,
+      'categories': selectedCategoryNames.toString(),
       'description': title,
       'people_needed': _peopleNeeded.toString(),
       'duration': _durationHours.toString(),
       'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
     };
-    ref.read(userProvider.notifier).addUserEvent(event);
-    ref.read(eventsProvider.notifier).addEvent(event);
+    var apiResponse = await createEventAPI(eventData);
+    if (apiResponse["ok"]){
+      ref.read(userProvider.notifier).addUserEvent(event);
+      ref.read(eventsProvider.notifier).addEvent(event);
+      return true;
+    }
+    else{
+      showGlobalSnackBar("Creating event has failed. (API Error)");
+      return false;
+    }
 
-    await FirebaseFirestore.instance.collection('event_info').add(eventData);
+    //await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
 
   Future<void> handleImage() async {
@@ -501,26 +511,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           : () async {
                               if (!(_formKey.currentState?.validate() ?? false)) return;
                               if (_startDateTime == null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).clearSnackBars();
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(const SnackBar(content: Text('Please pick a start date/time')));
+                                showGlobalSnackBar("Please pick a start date/time");
                                 return;
                               }
 
                               if (_durationHours == 0) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).clearSnackBars();
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please pick duration'),
-                                  ),
-                                );
+                                showGlobalSnackBar("Please pick duration");
                                 return;
                               }
 
@@ -528,15 +524,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                 _isLoading = true;
                               });
 
-                              await uploadFirestore();
+                              bool isUploaded = await uploadFirestore();
                               setState(() {
                                 _isLoading = false;
                               });
-
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('Event saved')));
-                              Navigator.pop(context);
+                              if (isUploaded){
+                                showGlobalSnackBar("Event saved");
+                                Navigator.pop(context);
+                              }
                             },
                       child: _isLoading ? CircularProgressIndicator() : Text('Submit'),
                     ),

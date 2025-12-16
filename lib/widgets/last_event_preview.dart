@@ -38,7 +38,15 @@ class LastEventPreview extends StatelessWidget {
               child: Image.network(
                 event.imageUrl,
                 fit: BoxFit.cover,
-              ),
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.green,
+                    child: Center(
+                      child: Icon(Icons.event, size: 64, color: Colors.black,)
+                    ),
+                  );
+                },
+              )
             ),
 
             Positioned.fill(

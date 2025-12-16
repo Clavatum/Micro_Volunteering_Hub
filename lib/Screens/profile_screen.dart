@@ -9,11 +9,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/auth_controller.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
-import 'google_sign_in_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -23,6 +24,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  static const Color primary = Color(0xFF00A86B);
+  static const background = Color(0xFFF2F2F3);
   String cloudName = 'dm2k6xcne';
   String APIkey = 'ipjhnrc2wVlb-zWv3aKmRKwV-og';
   String unsignedPresetName = 'microvolunteeringapp';
@@ -118,27 +121,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   int _selectedTab = 0;
 
-  Future<void> _logOut() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      await GoogleSignIn.instance.signOut();
-      Navigator.pop(context);
-    } catch (e) {
-      debugPrint('Logout error: $e');
+  Widget userAvatar(String? localPath){
+    if(localPath == null || localPath.isEmpty){
+      return const CircleAvatar(
+        radius: 52,
+        backgroundColor: primary,
+        child: ClipOval(
+          child: Icon(Icons.person, size: 64, color: Colors.white)
+        ),
+      );
+    }else{
+      return CircleAvatar(
+        radius: 52,
+        backgroundColor: primary,
+        backgroundImage: FileImage(File(localPath)),
+      );
     }
-  }
-
-  Future<void> userAvatar() async {
-
   }
   @override
   Widget build(BuildContext context) {
-    const Color primary = Color(0xFF00A86B);
-    const Color background = Color(0xFFF2F2F3);
 
     var userData = ref.watch(userProvider);
 
-    List<Event> userEvents = userData['users_events'];
+    List<Event> userEvents = userData['users_events'] ?? [];
     final String displayName = userData['user_name'] ?? 'Anonymous';
     final String role = 'Community Helper';
     String? photoUrl = userData['photo_url'];
@@ -160,7 +165,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black54),
             onPressed: () async {
-              await _logOut();
+              await ref.read(authControllerProvider.notifier).logout();
+              Navigator.of(context).pop();
             },
             tooltip: 'Log out',
           ),
@@ -177,21 +183,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: pickImage,
-                    child: CircleAvatar(
-                      radius: 52,
-                      backgroundColor: primary,
-                      child: ClipOval(
-                        child: Image.network(
-                          photoUrl!,
-                          width: 104,
-                          height: 104,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.person, size: 64, color: Colors.white);
-                          },
-                        )
-                      ),
-                    ),
+                    child: userAvatar(userData["photo_path"]),
                   ),
                   const SizedBox(height: 12),
                   Text(

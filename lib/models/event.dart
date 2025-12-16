@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 
@@ -42,25 +45,17 @@ class Event {
   }
 
   factory Event.fromJson(Map<String, dynamic> json, String docId) {
+    final Timestamp ts = json['starting_date'] as Timestamp;
     return Event(
       eventId: json['event_id'] ?? '',
       userId: json['user_id'] ?? '',
       title: json['description'] ?? '',
-      time: HelperFunctions.formatter.parse(json['starting_date'] ?? ''),
+      time: ts.toDate(),
       hostName: json['host_name'] ?? 'unknown',
-      capacity:
-          int.tryParse(
-            json['people_needed'],
-          ) ??
-          -1,
+      capacity: json['people_needed'],
       imageUrl: json['user_image_url'],
-      tags: _fromJsonToEvents(
-        json['categories'] ?? '',
-      ),
-      coords: LatLng(
-        double.tryParse(json['selected_lat']) ?? -1,
-        double.tryParse(json['selected_lon']) ?? -1,
-      ),
+      tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
+      coords: LatLng(json['selected_lat'],json['selected_lon']),
     );
   }
 }

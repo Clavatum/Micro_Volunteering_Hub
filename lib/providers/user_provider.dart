@@ -48,6 +48,10 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
     events.add(e);
     state = {...state, 'user_attended_events': events};
   }
+
+  void clear(){
+    state = {};
+  }
 }
 
 var userProvider = StateNotifierProvider<UserProvider, Map<String, dynamic>>(

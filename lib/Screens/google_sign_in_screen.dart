@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 
@@ -41,14 +40,6 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
     );
     GoogleSignIn googleSignIn = GoogleSignIn.instance;
     unawaited(googleSignIn.initialize(clientId: clientID));
-
-    _auth.authStateChanges().listen((user) {
-      if (mounted){
-        setState(() {
-          _user = user;
-        });
-      }
-    });
     _animController.forward();
   }
 
@@ -60,8 +51,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
 
   Future<void> _logInWithGoogle(BuildContext context) async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
-          .authenticate();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
 
       if (googleUser == null) {
         showGlobalSnackBar("Login cancelled");
@@ -72,8 +62,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
-      final UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithCredential(credential);
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       if (userCredential.user != null) {
         showGlobalSnackBar("Login successful.");
       } else {

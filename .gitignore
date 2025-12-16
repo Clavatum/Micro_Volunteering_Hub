@@ -49,6 +49,7 @@ app.*.map.json
 /android/build
 /android/app/build.gradle.kts
 lib/backend/server/__pycache__
+lib/backend/server/debug.py
 .vscode
 
 #Keys (IMPORTANT!!!)

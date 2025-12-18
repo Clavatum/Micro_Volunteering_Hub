@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local files
+/android/app/google-services.json
+/android/build
+/android/app/build.gradle.kts
+lib/backend/server/__pycache__
+lib/backend/server/debug.py
+.vscode
+
+#Keys (IMPORTANT!!!)
+lib/backend/server/service-account-file.json

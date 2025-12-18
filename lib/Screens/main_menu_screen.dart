@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
+import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 import 'package:micro_volunteering_hub/widgets/last_event_preview.dart';
+import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'profile_screen.dart';
 import 'get_help_screen.dart';
 import 'help_others_screen.dart';
-
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
 
@@ -28,47 +34,88 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   List<Event>? _closeEvents;
   bool _isLoading = true;
 
+  Timer? _positionTimer;
+  Timer? _pollingTimer;
+  int? _lastFetchTs;
+  bool _isFetching = false;
+
   @override
-  void initState() {
+  void initState(){
     super.initState();
-    _handleClose();
+    _init();
   }
 
-  Future<void> _handleClose() async {
+  Future<void> _init() async {
+    //await _getEventsFromFirebase();
     _userData = ref.read(userProvider);
-
-    try {
-      await _getEventsFromFirebase();
-      _userData = ref.read(userProvider);
-      _setDistances();
-      _setCloseEvents();
-      ref.read(userProvider.notifier).setUserEvents(_events!.where((e) => e.userId == _userData!['id']).toList());
-    } catch (e) {
-      debugPrint('Error loading events: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+    _setCloseEvents();
+    await fetchEvents();
+    startPositionTimer();
+    startEventPolling();
+    if (mounted){
+      setState(() => _isLoading = false);
     }
   }
 
-  void updateLocalEvents() {
-    setState(() {
-      _userData = ref.read(userProvider);
+  Future<void> fetchEvents() async{
+    if(_isFetching) return;
+    _isFetching = true;
+    try{
+      final fetchedEvents = await fetchEventsAPI(_lastFetchTs);
+      if (fetchedEvents.events.isNotEmpty){
+        _lastFetchTs = fetchedEvents.lastTs;
+        ref.read(eventsProvider.notifier).addEvents(fetchedEvents.events);
+        if(_userData != null){
+          ref.read(userProvider.notifier).setUserEvents(
+            fetchedEvents.events.where((e) => e.userId == _userData!['id']).toList(),
+          );
+        }
+      }
+    }catch(e){
+      debugPrint("fetchEvents has failed: $e");
+    }finally{
+      _isFetching = false;
+      _events = ref.watch(eventsProvider);
+    }
+  }
+  Future<void> startEventPolling() async{
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      try{
+        await fetchEvents();
+      }catch(e){
+        print("Something went wrong while fetching events: $e");
+      }
+    });
+  }
+  
+  void stopEventPolling(){
+    _pollingTimer?.cancel();
+  }
+
+  Future<void> startPositionTimer() async{
+    _positionTimer = Timer.periodic(const Duration(seconds: 5), (_) async{
+      try{
+        final position = ref.watch(positionNotifierProvider);
+        if (position == null) return;
+        ref.read(userProvider.notifier).setUserPosition(lat: position.latitude, lon: position.longitude);
+        _userData = ref.watch(userProvider);
+        //Update event distances
+        _setDistances();
+      }catch (e){
+        print("Error while reading position: $e");
+      }
     });
   }
 
-  Future<void> _getEventsFromFirebase() async {
-    final snap = await FirebaseFirestore.instance.collection('event_info').get();
-    _events = snap.docs.map((doc) => Event.fromJson(doc.data(), doc.id)).toList();
+  void stopPositionTimer(){
+    _positionTimer?.cancel();
   }
-
   void _setDistances() {
     if (_events == null || _userData == null) return;
     for (Event e in _events!) {
       e.setIsClose(
-        double.tryParse(_userData!['user_latitude'] ?? '-1000000000') ?? -1000000000,
-        double.tryParse(_userData!['user_longitude'] ?? '-1000000000') ?? -1000000000,
+        _userData!['user_latitude'] ?? -1000000000,
+        _userData!['user_longitude'] ?? -1000000000,
       );
     }
   }
@@ -76,6 +123,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   void _setCloseEvents() {
     if (_events == null) return;
     _closeEvents = _events!.where((e) => e.isClose == true).toList();
+    ref.read(closeEventsProvider.notifier).setEvents(_closeEvents!);
   }
 
   void _showCreateModal() {
@@ -100,7 +148,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => GetHelpScreen(updateLocalEvents: updateLocalEvents)),
+                    MaterialPageRoute(builder: (_) => GetHelpScreen()),
                   );
                 },
                 icon: const Icon(Icons.help),
@@ -138,6 +186,14 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     );
   }
 
+  bool isLoading = true;
+  @override
+  void dispose(){
+    stopEventPolling();
+    stopPositionTimer();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -147,7 +203,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         ),
       );
     }
-
+    final user = FirebaseAuth.instance.currentUser;
+    final name = user?.displayName ?? "Guest";
     return Scaffold(
       extendBody: true,
       backgroundColor: background,
@@ -159,7 +216,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, ${FirebaseAuth.instance.currentUser!.displayName}!',
+                  'Hello, $name!',
                   overflow: TextOverflow.clip,
                   style: GoogleFonts.poppins(
                     fontSize: 28,
@@ -212,8 +269,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                       style: GoogleFonts.poppins(color: Colors.black54),
                     ),
                   ),
-
-                const SizedBox(height: 100),
               ],
             ),
           ),
@@ -224,7 +279,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         onPressed: _showCreateModal,
         shape: const CircleBorder(),
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white, size:32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
@@ -232,28 +287,34 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         color: Colors.white,
         notchMargin: 6,
         child: SizedBox(
-          height: 60,
+          height: 80,
           child: Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  onPressed: () => setState(() => _navIndex = 0),
-                  icon: Icon(
-                    Icons.home,
-                    color: _navIndex == 0 ? primary : Colors.black54,
+                Expanded(
+                  child: IconButton(
+                    onPressed: () => setState(() => _navIndex = 0),
+                    icon: Icon(
+                      Icons.home,
+                      size: 32,
+                      color: _navIndex == 0 ? primary : Colors.black54,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 155),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.person,
-                    color: _navIndex == 1 ? primary : Colors.black54,
+                const SizedBox(width: 75),
+                Expanded(
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.person,
+                      size: 32,
+                      color: _navIndex == 1 ? primary : Colors.black54,
+                    ),
                   ),
                 ),
               ],

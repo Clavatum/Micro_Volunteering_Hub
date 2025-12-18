@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 
 class HelperFunctions {
-  static DateFormat formatter = DateFormat('dd.MM.yyyy');
+  static DateFormat formatter = DateFormat('dd.MM.yyyy HH:mm');
 
   static String getStringDistance(double lat, double lon, Event e) {
     return '${Geolocator.distanceBetween(

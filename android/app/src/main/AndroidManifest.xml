@@ -6,7 +6,7 @@
 
 
     <application
-        android:label="micro_volunteering_hub"
+        android:label="QuickHelp"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

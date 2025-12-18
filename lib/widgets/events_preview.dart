@@ -8,6 +8,7 @@ class EventsPreview extends StatelessWidget {
   final List<Event> events;
   @override
   Widget build(BuildContext context) {
+    print(events);
     return SizedBox(
       height: MediaQuery.of(context).size.height / 2 - 60,
       child: (events.isEmpty)
@@ -53,6 +54,14 @@ class EventsPreview extends StatelessWidget {
                             width: (MediaQuery.of(context).size.width * 0.34).clamp(96.0, 160.0),
                             height: 110,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.green,
+                                child: Center(
+                                  child: Icon(Icons.event, size: 48, color: Colors.black),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -76,14 +85,17 @@ class EventsPreview extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.person, size: 16),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      events[index].hostName,
-                                      overflow: TextOverflow.clip,
-                                      style: GoogleFonts.poppins(fontSize: 14),
+                                    SizedBox(
+                                      width: MediaQuery.of(context).size.width / 2.5,
+                                      child: Text(
+                                        events[index].hostName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(fontSize: 14),
+                                      ),
                                     ),
                                   ],
                                 ),

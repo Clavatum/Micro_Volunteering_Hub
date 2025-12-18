@@ -1,15 +1,19 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:micro_volunteering_hub/Screens/main_menu_screen.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
+import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
-import 'google_sign_in_screen.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
+import 'package:micro_volunteering_hub/utils/position_service.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
+import 'package:micro_volunteering_hub/utils/storage.dart';
 
 class AppLoadingScreen extends ConsumerStatefulWidget {
   const AppLoadingScreen({Key? key}) : super(key: key);
@@ -19,112 +23,144 @@ class AppLoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    return await Geolocator.getCurrentPosition();
-  }
+  String loadingText = "Initializing application";
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(initLocation);
     _initApp();
+  }
+  Future<void> initLocation() async{
+    final service = ref.read(positionServiceProvider);
+
+    final result = await service.checkPermission();
+    if(!mounted) return;
+
+    switch(result){
+      case LocationPermissionResult.serviceDisabled:
+        showGlobalSnackBar("Location service is disabled");
+        return;
+      case LocationPermissionResult.denied:
+        showGlobalSnackBar("Location permission is denied");
+        return;
+      case LocationPermissionResult.deniedForever:
+        showGlobalSnackBar("Location permission is denied forever");
+        return;
+      case LocationPermissionResult.ok:
+        await ref.read(positionNotifierProvider.notifier).updatePosition();
+    }
+  }
+
+  Future<bool> hasInternet() async{
+    final result = await Connectivity().checkConnectivity();
+    final internet = result.contains(ConnectivityResult.mobile) || result.contains(ConnectivityResult.wifi) || result.contains(ConnectivityResult.vpn);
+    return internet;
   }
 
   Future<void> _initApp() async {
-    await Firebase.initializeApp();
-    Position userp = await _determinePosition();
+    try{
+      final User? user = FirebaseAuth.instance.currentUser;
 
-    if (!mounted) return;
+      if (user == null){
+        return;
+      }
 
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const GoogleSignInScreen()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainMenuScreen()),
-      );
+      updateLoadingText("Checking internet connection");
+      final online = await hasInternet();
+
+    Map<String, dynamic>? userData;
+
+    if(online){
+      updateLoadingText("Fetching user data from Firebase");
+      userData = {
+        "id": user.uid,
+        "user_name": user.displayName ?? "unknown",
+        "user_mail": user.email,
+        "photo_url": user.photoURL ?? "",
+        "updated_at": DateTime.now().millisecondsSinceEpoch,
+      };
+      //Don't upload with photo_path
+      final apiResponse = await createAndStoreUserAPI(userData);
+      if (!apiResponse["ok"]){
+        showGlobalSnackBar(apiResponse["msg"]);
+      }
+      
+      userData["photo_path"] = await downloadAndSaveImage(userData["photo_url"], userData["id"]);
+      await UserLocalDb.saveUserAndActivate(userData);
+    }
+    else{
+      updateLoadingText("Fetching user data from database");
+      userData = await UserLocalDb.getActiveUser();
     }
 
-    var _user = FirebaseAuth.instance.currentUser!;
+    if (userData == null){
+      throw Exception("User data is missing");
+    }
+    Future.microtask((){
+      ref.read(userProvider.notifier).setUser(userData!);
+    });
+    } catch (e){
+      showGlobalSnackBar("App initialization failed");
+    }
 
-    var id = _user.uid;
-    var userName = _user.displayName ?? 'unknown';
-    var photoUrl = _user.photoURL;
+  }
 
-    Map<String, String> userData = {
-      'photo_url': photoUrl?? '',
-      'id': id,
-      'user_name': userName,
-      'user_mail': FirebaseAuth.instance.currentUser!.email!,
-      'user_latitude': userp.latitude.toString(),
-      'user_longitude': userp.longitude.toString(),
-    };
-
-    ref.read(userProvider.notifier).setUser(userData);
-
-    await FirebaseFirestore.instance.collection('user_info').doc(id).set(userData, SetOptions(merge: true));
+  void updateLoadingText(String text){
+    if(!mounted) return;
+    Future.microtask((){
+      if(!mounted) return;
+      setState(() {
+        loadingText = text;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFf6d365), Color(0xFFfda085)],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Loading",
-                style: GoogleFonts.poppins(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF5E35B1),
-                ),
-              ),
-              SizedBox(height: 20),
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
-              ),
-              SizedBox(height: 40),
-              Text(
-                "Initializing firebase",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF5E35B1),
-                ),
-              ),
-            ],
-          ),
+    return loadingScreen(loadingText);
+  }
+}
+
+//Loading screen
+Widget loadingScreen(String loadingText){
+  return Scaffold(
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFf6d365), Color(0xFFfda085)],
         ),
       ),
-    );
-  }
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Loading",
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E35B1),
+              ),
+            ),
+            SizedBox(height: 20),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
+            ),
+            SizedBox(height: 40),
+            Text(
+              "$loadingText",
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5E35B1),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

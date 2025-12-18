@@ -22,11 +22,14 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
 
   @override
   void initState() {
-    super.initState();
     _mapController = MapController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _centerMapToUser();
-    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 
   void _centerMapToUser() {
@@ -36,8 +39,8 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
       return;
     }
 
-    double? lat = double.tryParse(userData['user_latitude'] ?? '');
-    double? lon = double.tryParse(userData['user_longitude'] ?? '');
+    double? lat = userData['user_latitude'];
+    double? lon = userData['user_longitude'];
 
     if (lat == null || lon == null) {
       return;
@@ -87,8 +90,8 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
     final events = ref.watch(eventsProvider);
     final userData = ref.watch(userProvider);
 
-    double? userLat = double.tryParse(userData['user_latitude'] ?? '');
-    double? userLon = double.tryParse(userData['user_longitude'] ?? '');
+    double? userLat = userData['user_latitude'];
+    double? userLon = userData['user_longitude'];
     const Color primary = Color(0xFF00A86B);
 
     return Scaffold(
@@ -129,6 +132,7 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                 FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
+                    onMapReady: _centerMapToUser,
                     initialCenter: userLat != null && userLon != null
                         ? LatLng(userLat, userLon)
                         : const LatLng(41.0082, 28.9784),
@@ -292,11 +296,5 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
               ],
             ),
     );
-  }
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
   }
 }

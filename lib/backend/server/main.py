@@ -45,24 +45,24 @@ def createEvent(event: Event):
 
 @app.get("/events")
 def getEvents(since: Optional[int] = Query(None, description="Unix timestamp in ms"), limit: int = 50):
+    timestamps = []
     try:
         query = db.collection("event_info").order_by("createdAt")
-        if since is not None:
-            since_dt = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
-            query = query.where("createdAt", ">", since_dt)
         
         docs = list(query.limit(limit).stream())
         events = []
-        last_ts = since
         for doc in docs:
             data = doc.to_dict()
-            print(data)
             data["id"] = doc.id
             ts = data.get("createdAt")
             if ts:
-                last_ts = int(ts.timestamp() * 1000)
-        events.append(data)
-        return {"ok": True, "events": events, "last_ts": last_ts}
+                timestamps.append(int(ts.timestamp()*1000))
+            if since != None:
+                if timestamps[-1] > since:
+                    events.append(data)
+            else:
+                events.append(data)
+        return {"ok": True, "events": events, "last_ts": max(timestamps)}
     except Exception as e:
         print(e)
         return {"ok": False, "msg": str(e)}

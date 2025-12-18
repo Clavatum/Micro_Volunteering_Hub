@@ -1,7 +1,7 @@
 import firebase_admin
 import logging
 from firebase_admin import credentials, firestore
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from datetime import datetime, timedelta, timezone
 from models import *
 from utils import *
@@ -42,6 +42,30 @@ def createEvent(event: Event):
         print(e)
         print("Failed to create event")
         return {"ok": False, "msg": "Failed to create event (internal API error)."}
+
+@app.get("/events")
+def getEvents(since: Optional[int] = Query(None, description="Unix timestamp in ms"), limit: int = 50):
+    try:
+        query = db.collection("event_info").order_by("createdAt")
+        if since is not None:
+            since_dt = datetime.fromtimestamp(since / 1000, tz=timezone.utc)
+            query = query.where("createdAt", ">", since_dt)
+        
+        docs = list(query.limit(limit).stream())
+        events = []
+        last_ts = since
+        for doc in docs:
+            data = doc.to_dict()
+            print(data)
+            data["id"] = doc.id
+            ts = data.get("createdAt")
+            if ts:
+                last_ts = int(ts.timestamp() * 1000)
+        events.append(data)
+        return {"ok": True, "events": events, "last_ts": last_ts}
+    except Exception as e:
+        print(e)
+        return {"ok": False, "msg": str(e)}
 
 @app.get("/event/delete/all")
 def removeEventAll():

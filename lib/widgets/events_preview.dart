@@ -8,6 +8,7 @@ class EventsPreview extends StatelessWidget {
   final List<Event> events;
   @override
   Widget build(BuildContext context) {
+    print(events);
     return SizedBox(
       height: MediaQuery.of(context).size.height / 2 - 60,
       child: (events.isEmpty)

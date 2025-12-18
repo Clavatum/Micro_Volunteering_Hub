@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
+import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/database.dart';
+import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:micro_volunteering_hub/utils/storage.dart';
 
@@ -26,7 +28,28 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(initLocation);
     _initApp();
+  }
+  Future<void> initLocation() async{
+    final service = ref.read(positionServiceProvider);
+
+    final result = await service.checkPermission();
+    if(!mounted) return;
+
+    switch(result){
+      case LocationPermissionResult.serviceDisabled:
+        showGlobalSnackBar("Location service is disabled");
+        return;
+      case LocationPermissionResult.denied:
+        showGlobalSnackBar("Location permission is denied");
+        return;
+      case LocationPermissionResult.deniedForever:
+        showGlobalSnackBar("Location permission is denied forever");
+        return;
+      case LocationPermissionResult.ok:
+        await ref.read(positionNotifierProvider.notifier).updatePosition();
+    }
   }
 
   Future<bool> hasInternet() async{

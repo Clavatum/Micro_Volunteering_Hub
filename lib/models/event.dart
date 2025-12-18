@@ -44,18 +44,18 @@ class Event {
     isClose = (dist < 100000000);
   }
 
-  factory Event.fromJson(Map<String, dynamic> json, String docId) {
-    final Timestamp ts = json['starting_date'] as Timestamp;
+  factory Event.fromJson(Map<String, dynamic> json) {
+    final DateTime parsedDate = DateTime.parse(json["starting_date"]).toLocal();
     return Event(
-      eventId: json['event_id'] ?? '',
+      eventId: json["id"],
       userId: json['user_id'] ?? '',
       title: json['description'] ?? '',
-      time: ts.toDate(),
+      time: parsedDate,
       hostName: json['host_name'] ?? 'unknown',
       capacity: json['people_needed'],
       imageUrl: json['user_image_url'],
       tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
-      coords: LatLng(json['selected_lat'],json['selected_lon']),
+      coords: LatLng((json['selected_lat'] as num).toDouble(),(json['selected_lon'] as num).toDouble()),
     );
   }
 }

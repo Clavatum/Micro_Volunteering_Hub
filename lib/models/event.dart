@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 
@@ -14,6 +15,7 @@ class Event {
   final LatLng coords;
   bool isClose;
   int distanceToUser;
+  final List<String> attendendtIds;
 
   Event({
     required this.eventId,
@@ -26,6 +28,7 @@ class Event {
     required this.tags,
     required this.coords,
     this.distanceToUser = -1,
+    this.attendendtIds = const [],
   }) : isClose = false;
 
   void setIsClose(double lat, double lon) {
@@ -87,6 +90,29 @@ Tag _fromString(String s) {
   if (s == 'environment') return Tag.environment;
   if (s == 'animals') return Tag.animals;
   return Tag.other;
+}
+
+Color getColorBasedOnCategory(Event e) {
+  switch (e.tags.first) {
+    case Tag.animals:
+      return Colors.green;
+    case Tag.cleaning:
+      return Colors.lightBlue;
+    case Tag.community:
+      return Colors.orange;
+    case Tag.donation:
+      return Colors.green;
+    case Tag.emergency:
+      return Colors.red;
+    case Tag.environment:
+      return Colors.green;
+    case Tag.other:
+      return Colors.grey;
+    case Tag.skills:
+      return Colors.purple;
+    case Tag.support:
+      return Colors.blue;
+  }
 }
 
 List<Tag> _fromJsonToEvents(List<dynamic> events) {

@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -19,6 +17,7 @@ class HelpOthersScreen extends ConsumerStatefulWidget {
 
 class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   late MapController _mapController;
+  List<String> selectedTags = [];
 
   @override
   void initState() {
@@ -86,6 +85,12 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   Widget build(BuildContext context) {
     final events = ref.watch(eventsProvider);
     final userData = ref.watch(userProvider);
+
+    final allTags = <String>{for (final e in events) ...e.tags.map((t) => t.name)}.toList();
+
+    final filteredEvents = selectedTags.isEmpty
+        ? events
+        : events.where((e) => e.tags.any((t) => selectedTags.contains(t.name))).toList();
 
     double? userLat = double.tryParse(userData['user_latitude'] ?? '');
     double? userLon = double.tryParse(userData['user_longitude'] ?? '');
@@ -183,7 +188,7 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                             ),
                           ),
 
-                        ...events.map(
+                        ...filteredEvents.map(
                           (event) => Marker(
                             point: event.coords,
                             width: 50,
@@ -286,6 +291,45 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                     child: const Icon(
                       Icons.my_location,
                       color: Colors.white,
+                    ),
+                  ),
+                ),
+
+                // Tag Chip’leri
+                Positioned(
+                  top: 90,
+                  left: 0,
+                  right: 0,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: allTags.map((tag) {
+                        final isSelected = selectedTags.contains(tag);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ChoiceChip(
+                            label: Text(
+                              tag,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF00A86B),
+                            backgroundColor: Colors.grey[200],
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  selectedTags.add(tag);
+                                } else {
+                                  selectedTags.remove(tag);
+                                }
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),

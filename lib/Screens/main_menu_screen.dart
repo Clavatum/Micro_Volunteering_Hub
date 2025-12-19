@@ -48,8 +48,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   Future<void> _init() async {
     //await _getEventsFromFirebase();
     _userData = ref.read(userProvider);
-    _setCloseEvents();
     await fetchEvents();
+    _setDistances();
+    _setCloseEvents();
     startPositionTimer();
     startEventPolling();
     if (mounted){
@@ -76,6 +77,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }finally{
       _isFetching = false;
       _events = ref.watch(eventsProvider);
+      _setDistances();
+      _setCloseEvents();
     }
   }
   Future<void> startEventPolling() async{
@@ -99,8 +102,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         if (position == null) return;
         ref.read(userProvider.notifier).setUserPosition(lat: position.latitude, lon: position.longitude);
         _userData = ref.watch(userProvider);
-        //Update event distances
-        _setDistances();
       }catch (e){
         print("Error while reading position: $e");
       }
@@ -254,7 +255,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     fontSize: 15,
                   ),
                 ),
-
                 if (_closeEvents != null && _closeEvents!.isNotEmpty)
                   EventsPreview(events: _closeEvents!)
                 else

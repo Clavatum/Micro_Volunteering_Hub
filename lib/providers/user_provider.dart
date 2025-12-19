@@ -4,6 +4,10 @@ import 'package:micro_volunteering_hub/models/event.dart';
 class UserProvider extends StateNotifier<Map<String, dynamic>> {
   UserProvider() : super({});
 
+  void setUserPosition({required double lat, required double lon}){
+    state = {...state, "user_latitude": lat, "user_longitude": lon};
+  }
+
   void setUser(Map<String, dynamic> userData) {
     state = {...userData};
   }
@@ -20,7 +24,7 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
   }
 
   void addUserEvent(Event e) {
-    List<Event> usersEvents = state['users_events'];
+    List<Event> usersEvents = (state["users_events"] != null) ? state['users_events'] : [];
     usersEvents.add(e);
 
     state = {
@@ -47,6 +51,10 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
     List<Event> events = state['user_attended_events'];
     events.add(e);
     state = {...state, 'user_attended_events': events};
+  }
+
+  void clear(){
+    state = {};
   }
 }
 

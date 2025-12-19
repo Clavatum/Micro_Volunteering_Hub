@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
@@ -14,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:uuid/uuid.dart';
 
 class GetHelpScreen extends ConsumerStatefulWidget {
@@ -36,7 +38,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
-  Map<String, dynamic>? _locationknowladge;
+  Map<String, dynamic>? _locationknowledge;
 
   final List<String> _durationOptions = [
     '15 minutes',
@@ -82,12 +84,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     }
   }
 
-  Future<void> uploadFirestore() async {
-    if (_locationknowladge == null || _locationknowladge!['position'] == null || url == null) return;
+  Future<bool> uploadFirestore() async {
+    if (_locationknowledge == null || _locationknowledge!['position'] == null) return false;
 
     List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
-    LatLng pos = _locationknowladge!['position'];
+    LatLng pos = _locationknowledge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
     var title = _descriptionController.text;
     var userName = FirebaseAuth.instance.currentUser!.displayName ?? 'unknown';
@@ -106,26 +108,29 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     );
 
     Map<String, dynamic> eventData = {
-      'createdAt': DateTime.now(),
-      'expireAt': _startDateTime!.add(
-        Duration(hours: _durationHours),
-      ),
-      'event_id': event.eventId,
       'host_name': userName,
       'user_id': id,
-      'selected_lat': pos.latitude.toString(),
-      'selected_lon': pos.longitude.toString(),
-      'user_image_url': url!,
+      'selected_lat': pos.latitude,
+      'selected_lon': pos.longitude,
+      'user_image_url': url ?? "",
       'categories': selectedCategoryNames,
       'description': title,
-      'people_needed': _peopleNeeded.toString(),
-      'duration': _durationHours.toString(),
-      'starting_date': _startDateTime != null ? HelperFunctions.formatter.format(_startDateTime!) : 'null',
+      'people_needed': _peopleNeeded,
+      'duration': _durationHours,
+      'starting_date': _startDateTime != null ? _startDateTime!.toUtc().toString() : "null",
     };
-    ref.read(userProvider.notifier).addUserEvent(event);
-    ref.read(eventsProvider.notifier).addEvent(event);
+    var apiResponse = await createEventAPI(eventData);
+    if (apiResponse["ok"]){
+      ref.read(userProvider.notifier).addUserEvent(event);
+      ref.read(eventsProvider.notifier).addEvent(event);
+      return true;
+    }
+    else{
+      showGlobalSnackBar(apiResponse["msg"]);
+      return false;
+    }
 
-    await FirebaseFirestore.instance.collection('event_info').add(eventData);
+    //await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
 
   Future<void> handleImage() async {
@@ -295,14 +300,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           context,
                         ).push(MaterialPageRoute(builder: (context) => MapScreen()));
                         setState(() {
-                          _locationknowladge = map;
+                          _locationknowledge = map;
                         });
                       },
                       child: Center(
                         child: Text(
-                          _locationknowladge == null || _locationknowladge!['position'] == null
+                          _locationknowledge == null || _locationknowledge!['position'] == null
                               ? 'Tap to select a location'
-                              : '${_locationknowladge!['address']}',
+                              : '${_locationknowledge!['address']}',
                           style: GoogleFonts.poppins(
                             color: Colors.white70,
                           ).copyWith(fontWeight: FontWeight.bold, fontSize: 14),
@@ -435,7 +440,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -465,7 +470,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -500,27 +505,19 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           ? null
                           : () async {
                               if (!(_formKey.currentState?.validate() ?? false)) return;
+
+                              if (_locationknowledge == null){
+                                showGlobalSnackBar("Please pick a location");
+                                return;
+                              }
+
                               if (_startDateTime == null) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).clearSnackBars();
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(const SnackBar(content: Text('Please pick a start date/time')));
+                                showGlobalSnackBar("Please pick a start date/time");
                                 return;
                               }
 
                               if (_durationHours == 0) {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).clearSnackBars();
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please pick duration'),
-                                  ),
-                                );
+                                showGlobalSnackBar("Please pick a duration");
                                 return;
                               }
 
@@ -528,15 +525,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                 _isLoading = true;
                               });
 
-                              await uploadFirestore();
+                              bool isUploaded = await uploadFirestore();
                               setState(() {
                                 _isLoading = false;
                               });
-
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(const SnackBar(content: Text('Event saved')));
-                              Navigator.pop(context);
+                              if (isUploaded){
+                                showGlobalSnackBar("Event saved");
+                                Navigator.pop(context);
+                              }
                             },
                       child: _isLoading ? CircularProgressIndicator() : Text('Submit'),
                     ),

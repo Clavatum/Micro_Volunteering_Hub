@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class MapScreen extends StatefulWidget {
@@ -45,42 +46,12 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
       curve: Curves.easeInOut,
     );
     initUserAgent();
-    _getCurrentPosition();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  Future<String> getHumanReadableAddressFromLatLng(
-    double lat,
-    double long,
-  ) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, long);
-      Placemark place = placemarks[0];
-      return '${place.street}, ${place.subLocality}, ${place.subAdministrativeArea}, ${place.postalCode}';
-    } catch (e) {
-      return 'no address';
-    }
-  }
-
-  Future<void> _getCurrentPosition() async {
-    final hasPermission = await _handleLocationPermission();
-    if (!hasPermission) return;
-
-    try {
-      Position userPos = await Geolocator.getCurrentPosition();
-      setState(() {
-        _currentPosition = userPos;
-        _currentCenter = LatLng(userPos.latitude, userPos.longitude);
-        tappedPos = _currentCenter;
-      });
-    } catch (e) {
-      debugPrint('$e');
-    }
   }
 
   void _centerToMyLocation() {
@@ -116,56 +87,6 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
       final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
-  }
-
-  Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        _showSnackBar('location service enabled', Icons.warning_amber_rounded);
-      }
-      return false;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if (mounted) {
-          _showSnackBar('Location permission denied', Icons.location_off);
-        }
-        return false;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        _showSnackBar('Location permission denied forever', Icons.block);
-      }
-      return false;
-    }
-    return true;
-  }
-
-  void _showSnackBar(String message, IconData icon) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.black87,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -223,7 +144,7 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
               maxZoom: 18,
               onTap: (tapPosition, point) async {
                 _animationController.forward();
-                var selectedAddress = await getHumanReadableAddressFromLatLng(
+                var selectedAddress = await PositionService.getHumanReadableAddressFromLatLng(
                   point.latitude,
                   point.longitude,
                 );

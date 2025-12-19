@@ -65,16 +65,17 @@ class EventDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              height: 170,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(event.imageUrl),
-                  fit: BoxFit.cover,
+            (event.imageUrl.isNotEmpty) ?
+              Container(
+                height: 170,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(event.imageUrl),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            ),
+              ): Container(width: double.infinity, height: 170, color: Colors.green,),
 
             ClipRRect(
               borderRadius: const BorderRadius.only(

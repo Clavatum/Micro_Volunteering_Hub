@@ -53,6 +53,14 @@ class EventsPreview extends StatelessWidget {
                             width: (MediaQuery.of(context).size.width * 0.34).clamp(96.0, 160.0),
                             height: 110,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.green,
+                                child: Center(
+                                  child: Icon(Icons.event, size: 48, color: Colors.black),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),

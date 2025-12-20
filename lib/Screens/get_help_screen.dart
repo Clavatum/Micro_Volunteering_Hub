@@ -296,7 +296,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                     ),
                     child: InkWell(
                       onTap: () async {
-                        Map<String, dynamic> map = await Navigator.of(
+                        Map<String, dynamic>? map = await Navigator.of(
                           context,
                         ).push(MaterialPageRoute(builder: (context) => MapScreen()));
                         setState(() {

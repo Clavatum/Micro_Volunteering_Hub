@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 
 class UserProvider extends StateNotifier<Map<String, dynamic>> {
   UserProvider() : super({});
 
-  void setUserPosition({required double lat, required double lon}){
-    state = {...state, "user_latitude": lat, "user_longitude": lon};
+  void setUserPosition({required Position? position}){
+    state = {...state, "user_position": position};
   }
 
   void setUser(Map<String, dynamic> userData) {

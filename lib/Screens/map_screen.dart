@@ -1,25 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class MapScreen extends StatefulWidget {
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMixin {
+class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProviderStateMixin{
   Position? _currentPosition;
   final MapController _mapController = MapController();
   double _currentZoom = 13;
   String? _selectedAddress;
   LatLng? _currentCenter;
   LatLng? tappedPos;
+  Map<String, dynamic>? _userData;
 
   String userAgent = '';
   bool _isUserAgentReady = false;
@@ -91,6 +95,9 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final _userData = ref.watch(userProvider);
+    _currentPosition = _userData["user_position"];
+
     if (_currentPosition == null || !_isUserAgentReady) {
       return Scaffold(
         body: Container(
@@ -166,9 +173,47 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                 userAgentPackageName: userAgent,
                 maxZoom: 19,
               ),
-              if (tappedPos != null)
-                MarkerLayer(
-                  markers: [
+              MarkerLayer(
+                markers: [
+                  if (_currentPosition != null)
+                    Marker(
+                      point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                      width: 50,
+                      height: 50,
+                      child: GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'Your location',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: Colors.blue,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withAlpha(220),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withAlpha(150),
+                                blurRadius: 12,
+                                spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.person_pin_circle,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (tappedPos != null)
                     Marker(
                       point: tappedPos!,
                       width: 60,
@@ -200,8 +245,8 @@ class _MapScreenState extends State<MapScreen> with SingleTickerProviderStateMix
                         ),
                       ),
                     ),
-                  ],
-                ),
+                ],
+              ),
             ],
           ),
 

@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -20,6 +21,7 @@ class HelpOthersScreen extends ConsumerStatefulWidget {
 
 class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   late MapController _mapController;
+  List<String> selectedTags = [];
   Map<String, dynamic>? _userData;
   Position? _currentPosition;
 
@@ -89,6 +91,12 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
     final events = ref.watch(eventsProvider);
     final _userData = ref.watch(userProvider);
     _currentPosition = _userData["user_position"];
+
+    final allTags = <String>{for (final e in events) ...e.tags.map((t) => t.name)}.toList();
+
+    final filteredEvents = selectedTags.isEmpty
+        ? events
+        : events.where((e) => e.tags.any((t) => selectedTags.contains(t.name))).toList();
     const Color primary = Color(0xFF00A86B);
 
     return Scaffold(

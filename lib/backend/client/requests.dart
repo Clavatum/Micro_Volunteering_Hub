@@ -59,10 +59,9 @@ Future<FetchEventsResult> fetchEventsAPI(int? since) async{
   try{
     final response = await http.get(
       Uri.parse((since == null) ? "$localServerURL/events" : "$localServerURL/events?since=$since"),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 5));
     if (response.statusCode == 200){
       final body = jsonDecode(response.body);
-      print(body["events"]);
       return FetchEventsResult((body["events"] as List? ?? []).map((e) => Event.fromJson(e)).toList(),
         body["last_ts"]);
     }

@@ -20,6 +20,6 @@ class PositionNotifier extends StateNotifier<Position?>{
 
     state = pos;
 
-    ref.read(userProvider.notifier).setUserPosition(lat: pos.latitude, lon: pos.longitude);
+    ref.read(userProvider.notifier).setUserPosition(position: pos);
   }
 }

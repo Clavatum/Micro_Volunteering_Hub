@@ -70,7 +70,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       final online = await hasInternet();
 
     Map<String, dynamic>? userData;
-
     if(online){
       updateLoadingText("Fetching user data from Firebase");
       userData = {
@@ -97,9 +96,8 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     if (userData == null){
       throw Exception("User data is missing");
     }
-    Future.microtask((){
-      ref.read(userProvider.notifier).setUser(userData!);
-    });
+    if (!mounted) return;
+    ref.read(userProvider.notifier).setUser(userData!);
     } catch (e){
       showGlobalSnackBar("App initialization failed");
     }

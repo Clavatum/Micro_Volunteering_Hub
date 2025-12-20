@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 firebase-admin
 python-dotenv
+pydantic
+typing-extensions

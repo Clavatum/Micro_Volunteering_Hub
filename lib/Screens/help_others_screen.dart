@@ -192,7 +192,7 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                             ),
                           ),
 
-                        ...events.map(
+                        ...filteredEvents.map(
                           (event) => Marker(
                             point: event.coords,
                             width: 50,
@@ -295,6 +295,45 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                     child: const Icon(
                       Icons.my_location,
                       color: Colors.white,
+                    ),
+                  ),
+                ),
+
+                // Tag Chip’leri
+                Positioned(
+                  top: 90,
+                  left: 0,
+                  right: 0,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: allTags.map((tag) {
+                        final isSelected = selectedTags.contains(tag);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ChoiceChip(
+                            label: Text(
+                              tag,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF00A86B),
+                            backgroundColor: Colors.grey[200],
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  selectedTags.add(tag);
+                                } else {
+                                  selectedTags.remove(tag);
+                                }
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),

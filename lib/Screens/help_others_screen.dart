@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+<<<<<<< Updated upstream
+=======
+import 'package:geolocator/geolocator.dart';
+>>>>>>> Stashed changes
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/models/event.dart';

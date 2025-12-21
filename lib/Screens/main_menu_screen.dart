@@ -17,6 +17,7 @@ import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'profile_screen.dart';
 import 'get_help_screen.dart';
 import 'help_others_screen.dart';
+
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
 
@@ -40,7 +41,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   bool _isFetching = false;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _init();
   }
@@ -53,64 +54,68 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     _setCloseEvents();
     startPositionTimer();
     startEventPolling();
-    if (mounted){
+    if (mounted) {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> fetchEvents() async{
-    if(_isFetching) return;
+  Future<void> fetchEvents() async {
+    if (_isFetching) return;
     _isFetching = true;
-    try{
+    try {
       final fetchedEvents = await fetchEventsAPI(_lastFetchTs);
-      if (fetchedEvents.events.isNotEmpty){
+      if (fetchedEvents.events.isNotEmpty) {
         _lastFetchTs = fetchedEvents.lastTs;
         ref.read(eventsProvider.notifier).addEvents(fetchedEvents.events);
-        if(_userData != null){
-          ref.read(userProvider.notifier).setUserEvents(
-            fetchedEvents.events.where((e) => e.userId == _userData!['id']).toList(),
-          );
+        if (_userData != null) {
+          ref
+              .read(userProvider.notifier)
+              .setUserEvents(
+                fetchedEvents.events.where((e) => e.userId == _userData!['id']).toList(),
+              );
         }
       }
-    }catch(e){
+    } catch (e) {
       debugPrint("fetchEvents has failed: $e");
-    }finally{
+    } finally {
       _isFetching = false;
       _events = ref.watch(eventsProvider);
       _setDistances();
       _setCloseEvents();
     }
   }
-  Future<void> startEventPolling() async{
+
+  Future<void> startEventPolling() async {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      try{
+      try {
         await fetchEvents();
-      }catch(e){
+      } catch (e) {
         print("Something went wrong while fetching events: $e");
       }
     });
   }
-  
-  void stopEventPolling(){
+
+  void stopEventPolling() {
     _pollingTimer?.cancel();
   }
 
-  Future<void> startPositionTimer() async{
-    _positionTimer = Timer.periodic(const Duration(seconds: 5), (_) async{
-      try{
+  Future<void> startPositionTimer() async {
+    _positionTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      try {
         final position = ref.watch(positionNotifierProvider);
         if (position == null) return;
         ref.read(userProvider.notifier).setUserPosition(lat: position.latitude, lon: position.longitude);
         _userData = ref.watch(userProvider);
-      }catch (e){
+      } catch (e) {
         print("Error while reading position: $e");
       }
     });
   }
 
-  void stopPositionTimer(){
+  void stopPositionTimer() {
     _positionTimer?.cancel();
   }
+
   void _setDistances() {
     if (_events == null || _userData == null) return;
     for (Event e in _events!) {
@@ -189,7 +194,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   bool isLoading = true;
   @override
-  void dispose(){
+  void dispose() {
     stopEventPolling();
     stopPositionTimer();
     super.dispose();
@@ -279,7 +284,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         onPressed: _showCreateModal,
         shape: const CircleBorder(),
         backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white, size:32),
+        child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(

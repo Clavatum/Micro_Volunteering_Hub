@@ -31,13 +31,14 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     Future.microtask(initLocation);
     _initApp();
   }
-  Future<void> initLocation() async{
+
+  Future<void> initLocation() async {
     final service = ref.read(positionServiceProvider);
 
     final result = await service.checkPermission();
-    if(!mounted) return;
+    if (!mounted) return;
 
-    switch(result){
+    switch (result) {
       case LocationPermissionResult.serviceDisabled:
         showGlobalSnackBar("Location service is disabled");
         return;
@@ -52,23 +53,27 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     }
   }
 
-  Future<bool> hasInternet() async{
+  Future<bool> hasInternet() async {
     final result = await Connectivity().checkConnectivity();
-    final internet = result.contains(ConnectivityResult.mobile) || result.contains(ConnectivityResult.wifi) || result.contains(ConnectivityResult.vpn);
+    final internet =
+        result.contains(ConnectivityResult.mobile) ||
+        result.contains(ConnectivityResult.wifi) ||
+        result.contains(ConnectivityResult.vpn);
     return internet;
   }
 
   Future<void> _initApp() async {
-    try{
+    try {
       final User? user = FirebaseAuth.instance.currentUser;
 
-      if (user == null){
+      if (user == null) {
         return;
       }
 
       updateLoadingText("Checking internet connection");
       final online = await hasInternet();
 
+<<<<<<< Updated upstream
     Map<String, dynamic>? userData;
 
     if(online){
@@ -101,15 +106,45 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       ref.read(userProvider.notifier).setUser(userData!);
     });
     } catch (e){
+=======
+      Map<String, dynamic>? userData;
+      if (online) {
+        updateLoadingText("Fetching user data from Firebase");
+        userData = {
+          "id": user.uid,
+          "user_name": user.displayName ?? "unknown",
+          "user_mail": user.email,
+          "photo_url": user.photoURL ?? "",
+          "updated_at": DateTime.now().millisecondsSinceEpoch,
+        };
+        //Don't upload with photo_path
+        final apiResponse = await createAndStoreUserAPI(userData);
+
+        if (!apiResponse["ok"]) {
+          showGlobalSnackBar(apiResponse["msg"]);
+        }
+
+        userData["photo_path"] = await downloadAndSaveImage(userData["photo_url"], userData["id"]);
+        await UserLocalDb.saveUserAndActivate(userData);
+      } else {
+        updateLoadingText("Fetching user data from database");
+        userData = await UserLocalDb.getActiveUser();
+      }
+
+      if (userData == null) {
+        throw Exception("User data is missing");
+      }
+      ref.read(userProvider.notifier).setUser(userData);
+    } catch (e) {
+>>>>>>> Stashed changes
       showGlobalSnackBar("App initialization failed");
     }
-
   }
 
-  void updateLoadingText(String text){
-    if(!mounted) return;
-    Future.microtask((){
-      if(!mounted) return;
+  void updateLoadingText(String text) {
+    if (!mounted) return;
+    Future.microtask(() {
+      if (!mounted) return;
       setState(() {
         loadingText = text;
       });
@@ -123,7 +158,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 }
 
 //Loading screen
-Widget loadingScreen(String loadingText){
+Widget loadingScreen(String loadingText) {
   return Scaffold(
     body: Container(
       decoration: const BoxDecoration(

@@ -66,7 +66,9 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
   Future<void> uploadToCloudinary() async {
     if (_image == null) return;
-    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final url = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
 
     var request = http.MultipartRequest('POST', url)
       ..fields['upload_preset'] = unsignedPresetName
@@ -85,9 +87,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   }
 
   Future<bool> uploadFirestore() async {
-    if (_locationknowledge == null || _locationknowledge!['position'] == null) return false;
+    if (_locationknowledge == null || _locationknowledge!['position'] == null)
+      return false;
 
-    List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
+    List<String> selectedCategoryNames = _selectedCategories
+        .map((e) => e.name)
+        .toList();
 
     LatLng pos = _locationknowledge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
@@ -117,15 +122,16 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'description': title,
       'people_needed': _peopleNeeded,
       'duration': _durationHours,
-      'starting_date': _startDateTime != null ? _startDateTime!.toUtc().toString() : "null",
+      'starting_date': _startDateTime != null
+          ? _startDateTime!.toUtc().toString()
+          : "null",
     };
     var apiResponse = await createEventAPI(eventData);
-    if (apiResponse["ok"]){
+    if (apiResponse["ok"]) {
       ref.read(userProvider.notifier).addUserEvent(event);
       ref.read(eventsProvider.notifier).addEvent(event);
       return true;
-    }
-    else{
+    } else {
       showGlobalSnackBar(apiResponse["msg"]);
       return false;
     }
@@ -168,14 +174,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                 _pickImageFromCamera();
                 Navigator.pop(context);
               },
-              child: Text('Select from camera'),
+              child: Text('Select From Camera'),
             ),
             ElevatedButton(
               onPressed: () {
                 _pickImageFromGallery();
                 Navigator.pop(context);
               },
-              child: Text('Select from gallery'),
+              child: Text('Select From Gallery'),
             ),
           ],
         ),
@@ -198,12 +204,18 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     );
     if (pickedTime == null) return;
     setState(() {
-      _startDateTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+      _startDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
     });
   }
 
   String _formatStart() {
-    if (_startDateTime == null) return 'Pick start';
+    if (_startDateTime == null) return 'Pick Start';
     final dt = _startDateTime!.toLocal();
     return '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -223,7 +235,10 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
         elevation: 2,
         title: Text(
           'Get Help',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -241,6 +256,15 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Picture',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Container(
                     height: 180,
                     width: double.infinity,
@@ -253,7 +277,10 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       child: _image != null
                           ? Image.file(_image!, fit: BoxFit.cover)
                           : Center(
-                              child: Text('Pictures placeholder', style: GoogleFonts.poppins(color: Colors.white70)),
+                              child: Text(
+                                'Add a Picture',
+                                style: GoogleFonts.poppins(color: primary),
+                              ),
                             ),
                       onTap: () => pickImage(),
                     ),
@@ -262,8 +289,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                   const SizedBox(height: 24),
 
                   Text(
-                    'Event description',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    'Event Description',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -272,17 +303,26 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: .95),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-                      hintText: 'Describe the event...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      hintText: 'Describe the Event...',
+                      hintStyle: GoogleFonts.poppins(color: primary),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a description' : null,
-                    style: GoogleFonts.poppins(color: Colors.black87),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Please enter a description'
+                        : null,
+                    style: GoogleFonts.poppins(color: primary),
                   ),
                   const SizedBox(height: 16),
 
                   Text(
                     'Location',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
 
                   const SizedBox(height: 8),
@@ -296,21 +336,31 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                     ),
                     child: InkWell(
                       onTap: () async {
-                        Map<String, dynamic>? map = await Navigator.of(
-                          context,
-                        ).push(MaterialPageRoute(builder: (context) => MapScreen()));
+                        Map<String, dynamic>? map =
+                            await Navigator.of(
+                              context,
+                            ).push(
+                              MaterialPageRoute(
+                                builder: (context) => MapScreen(),
+                              ),
+                            );
                         setState(() {
                           _locationknowledge = map;
                         });
                       },
                       child: Center(
                         child: Text(
-                          _locationknowledge == null || _locationknowledge!['position'] == null
-                              ? 'Tap to select a location'
+                          _locationknowledge == null ||
+                                  _locationknowledge!['position'] == null
+                              ? 'Tap to Select a Location'
                               : '${_locationknowledge!['address']}',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white70,
-                          ).copyWith(fontWeight: FontWeight.bold, fontSize: 14),
+                          style:
+                              GoogleFonts.poppins(
+                                color: primary,
+                              ).copyWith(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 14,
+                              ),
                         ),
                       ),
                     ),
@@ -319,7 +369,11 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
                   Text(
                     'Category',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -328,8 +382,13 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         onPressed: () async {
                           // show multi-select sheet
@@ -341,42 +400,79 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               return StatefulBuilder(
                                 builder: (context, setStateModal) {
                                   return Padding(
-                                    padding: MediaQuery.of(context).viewInsets,
+                                    padding: MediaQuery.of(
+                                      context,
+                                    ).viewInsets,
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            'Select categories',
-                                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+                                            'Select Categories',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                           const SizedBox(height: 12),
                                           ..._categories.map((c) {
-                                            final checked = temp.contains(c);
+                                            final checked = temp.contains(
+                                              c,
+                                            );
                                             return CheckboxListTile(
                                               value: checked,
-                                              title: Text(c.name, style: GoogleFonts.poppins()),
-                                              onChanged: (v) => setStateModal(() {
-                                                if (v == true)
-                                                  temp.add(c);
-                                                else
-                                                  temp.remove(c);
-                                              }),
+                                              activeColor: primary,
+                                              checkColor: Colors.white,
+                                              title: Text(
+                                                c.name,
+                                                style: GoogleFonts.poppins(),
+                                              ),
+                                              onChanged: (v) =>
+                                                  setStateModal(() {
+                                                    if (v == true)
+                                                      temp.add(c);
+                                                    else
+                                                      temp.remove(c);
+                                                  }),
                                             );
                                           }),
                                           const SizedBox(height: 8),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
                                             children: [
                                               TextButton(
-                                                onPressed: () => Navigator.of(ctx).pop(_selectedCategories),
-                                                child: Text('Cancel', style: GoogleFonts.poppins()),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: primary,
+                                                ),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(
+                                                      _selectedCategories,
+                                                    ),
+                                                child: Text(
+                                                  'Cancel',
+                                                  style: GoogleFonts.poppins(
+                                                    color: primary,
+                                                  ),
+                                                ),
                                               ),
                                               const SizedBox(width: 8),
                                               ElevatedButton(
-                                                onPressed: () => Navigator.of(ctx).pop(temp),
-                                                child: Text('Done', style: GoogleFonts.poppins()),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.white
+                                                      .withValues(alpha: .95),
+                                                  foregroundColor: primary,
+                                                ),
+                                                onPressed: () => Navigator.of(
+                                                  ctx,
+                                                ).pop(temp),
+                                                child: Text(
+                                                  'Done',
+                                                  style: GoogleFonts.poppins(
+                                                    color: primary,
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -392,27 +488,41 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                             setState(() => _selectedCategories = selected);
                           }
                         },
-                        child: Text('Select Categories', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                        child: Text(
+                          'Select Categories',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _selectedCategories.isEmpty
-                              ? 'No categories selected'
-                              : '${_selectedCategories.length} selected',
-                          style: GoogleFonts.poppins(color: Colors.black54),
+                              ? 'No Categories Selected'
+                              : '${_selectedCategories.length} Selected',
+                          style: GoogleFonts.poppins(color: primary),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   if (_selectedCategories.isNotEmpty)
-                    Wrap(spacing: 8, children: _selectedCategories.map((c) => Chip(label: Text(c.name))).toList()),
+                    Wrap(
+                      spacing: 8,
+                      children: _selectedCategories
+                          .map((c) => Chip(label: Text(c.name)))
+                          .toList(),
+                    ),
                   const SizedBox(height: 16),
 
                   Text(
-                    'Start (date & time)',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    'Start (Date & Time)',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -420,13 +530,18 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: .95),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: .95,
+                            ),
                             foregroundColor: primary,
                           ),
                           onPressed: () => _pickStartDateTime(context),
                           child: Text(
                             _formatStart(),
-                            style: GoogleFonts.poppins(color: primary, fontWeight: FontWeight.w500),
+                            style: GoogleFonts.poppins(
+                              color: primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -436,11 +551,18 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
                   Text(
                     'Duration',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -449,7 +571,10 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       initialValue: _selectedDuration,
                       isExpanded: true,
                       decoration: const InputDecoration.collapsed(hintText: ''),
-                      hint: Text('Select duration', style: GoogleFonts.poppins(color: primary)),
+                      hint: Text(
+                        'Select Duration',
+                        style: GoogleFonts.poppins(color: primary),
+                      ),
                       items: _durationOptions
                           .map(
                             (d) => DropdownMenuItem(
@@ -459,18 +584,27 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           )
                           .toList(),
                       onChanged: (v) => setState(() => _selectedDuration = v),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Please select duration' : null,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Please Select Duration'
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   Text(
-                    'People needed',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                    'People Needed',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(8),
@@ -483,7 +617,10 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           .map(
                             (n) => DropdownMenuItem(
                               value: n,
-                              child: Text(n.toString(), style: GoogleFonts.poppins()),
+                              child: Text(
+                                n.toString(),
+                                style: GoogleFonts.poppins(color: primary),
+                              ),
                             ),
                           )
                           .toList(),
@@ -499,20 +636,26 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         backgroundColor: primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14.0),
-                        textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                        textStyle: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       onPressed: _isLoading
                           ? null
                           : () async {
-                              if (!(_formKey.currentState?.validate() ?? false)) return;
+                              if (!(_formKey.currentState?.validate() ?? false))
+                                return;
 
-                              if (_locationknowledge == null){
+                              if (_locationknowledge == null) {
                                 showGlobalSnackBar("Please pick a location");
                                 return;
                               }
 
                               if (_startDateTime == null) {
-                                showGlobalSnackBar("Please pick a start date/time");
+                                showGlobalSnackBar(
+                                  "Please pick a start date/time",
+                                );
                                 return;
                               }
 
@@ -529,12 +672,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               setState(() {
                                 _isLoading = false;
                               });
-                              if (isUploaded){
+                              if (isUploaded) {
                                 showGlobalSnackBar("Event saved");
                                 Navigator.pop(context);
                               }
                             },
-                      child: _isLoading ? CircularProgressIndicator() : Text('Submit'),
+                      child: _isLoading
+                          ? CircularProgressIndicator()
+                          : Text('Submit'),
                     ),
                   ),
                 ],

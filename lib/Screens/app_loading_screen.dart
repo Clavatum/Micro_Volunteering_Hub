@@ -23,7 +23,7 @@ class AppLoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
-  String loadingText = "Initializing application";
+  String loadingText = "Initializing Application";
 
   @override
   void initState() {
@@ -31,83 +31,88 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     Future.microtask(initLocation);
     _initApp();
   }
-  Future<void> initLocation() async{
+
+  Future<void> initLocation() async {
     final service = ref.read(positionServiceProvider);
 
     final result = await service.checkPermission();
-    if(!mounted) return;
+    if (!mounted) return;
 
-    switch(result){
+    switch (result) {
       case LocationPermissionResult.serviceDisabled:
-        showGlobalSnackBar("Location service is disabled");
+        showGlobalSnackBar("Location Service is Disabled");
         return;
       case LocationPermissionResult.denied:
-        showGlobalSnackBar("Location permission is denied");
+        showGlobalSnackBar("Location Permission is Denied");
         return;
       case LocationPermissionResult.deniedForever:
-        showGlobalSnackBar("Location permission is denied forever");
+        showGlobalSnackBar("Location Permission is Denied Forever");
         return;
       case LocationPermissionResult.ok:
         await ref.read(positionNotifierProvider.notifier).updatePosition();
     }
   }
 
-  Future<bool> hasInternet() async{
+  Future<bool> hasInternet() async {
     final result = await Connectivity().checkConnectivity();
-    final internet = result.contains(ConnectivityResult.mobile) || result.contains(ConnectivityResult.wifi) || result.contains(ConnectivityResult.vpn);
+    final internet =
+        result.contains(ConnectivityResult.mobile) ||
+        result.contains(ConnectivityResult.wifi) ||
+        result.contains(ConnectivityResult.vpn);
     return internet;
   }
 
   Future<void> _initApp() async {
-    try{
+    try {
       final User? user = FirebaseAuth.instance.currentUser;
 
-      if (user == null){
+      if (user == null) {
         return;
       }
 
-      updateLoadingText("Checking internet connection");
+      updateLoadingText("Checking Internet Connection");
       final online = await hasInternet();
 
-    Map<String, dynamic>? userData;
-    if(online){
-      updateLoadingText("Fetching user data from Firebase");
-      userData = {
-        "id": user.uid,
-        "user_name": user.displayName ?? "unknown",
-        "user_mail": user.email,
-        "photo_url": user.photoURL ?? "",
-        "updated_at": DateTime.now().millisecondsSinceEpoch,
-      };
-      //Don't upload with photo_path
-      final apiResponse = await createAndStoreUserAPI(userData);
-      if (!apiResponse["ok"]){
-        showGlobalSnackBar(apiResponse["msg"]);
+      Map<String, dynamic>? userData;
+      if (online) {
+        updateLoadingText("Fetching User Data From Firebase");
+        userData = {
+          "id": user.uid,
+          "user_name": user.displayName ?? "unknown",
+          "user_mail": user.email,
+          "photo_url": user.photoURL ?? "",
+          "updated_at": DateTime.now().millisecondsSinceEpoch,
+        };
+        //Don't upload with photo_path
+        final apiResponse = await createAndStoreUserAPI(userData);
+        if (!apiResponse["ok"]) {
+          showGlobalSnackBar(apiResponse["msg"]);
+        }
+
+        userData["photo_path"] = await downloadAndSaveImage(
+          userData["photo_url"],
+          userData["id"],
+        );
+        await UserLocalDb.saveUserAndActivate(userData);
+      } else {
+        updateLoadingText("Fetching User Data From Database");
+        userData = await UserLocalDb.getActiveUser();
       }
-      
-      userData["photo_path"] = await downloadAndSaveImage(userData["photo_url"], userData["id"]);
-      await UserLocalDb.saveUserAndActivate(userData);
-    }
-    else{
-      updateLoadingText("Fetching user data from database");
-      userData = await UserLocalDb.getActiveUser();
-    }
 
-    if (userData == null){
-      throw Exception("User data is missing");
+      if (userData == null) {
+        throw Exception("User Data is Missing");
+      }
+      if (!mounted) return;
+      ref.read(userProvider.notifier).setUser(userData!);
+    } catch (e) {
+      showGlobalSnackBar("App Initialization Failed");
     }
-    if (!mounted) return;
-    ref.read(userProvider.notifier).setUser(userData!);
-    } catch (e){
-      showGlobalSnackBar("App initialization failed");
-    }
-
   }
 
-  void updateLoadingText(String text){
-    if(!mounted) return;
-    Future.microtask((){
-      if(!mounted) return;
+  void updateLoadingText(String text) {
+    if (!mounted) return;
+    Future.microtask(() {
+      if (!mounted) return;
       setState(() {
         loadingText = text;
       });
@@ -121,14 +126,17 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 }
 
 //Loading screen
-Widget loadingScreen(String loadingText){
+Widget loadingScreen(String loadingText) {
   return Scaffold(
     body: Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFf6d365), Color(0xFFfda085)],
+          colors: [
+            Color.fromARGB(255, 255, 255, 255),
+            Color.fromARGB(255, 130, 228, 130),
+          ],
         ),
       ),
       child: Center(
@@ -140,12 +148,12 @@ Widget loadingScreen(String loadingText){
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF5E35B1),
+                color: Color(0xFF00A86B),
               ),
             ),
             SizedBox(height: 20),
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
+              valueColor: AlwaysStoppedAnimation(Color(0xFF00A86B)),
             ),
             SizedBox(height: 40),
             Text(
@@ -153,7 +161,7 @@ Widget loadingScreen(String loadingText){
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF5E35B1),
+                color: Color(0xFF00A86B),
               ),
             ),
           ],

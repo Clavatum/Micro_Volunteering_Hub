@@ -8,8 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 
-String clientID =
-    "615113923331-7si1neuaitp2q6seah3085ks5n3vuo0h.apps.googleusercontent.com";
+const googleWebClientId =
+    String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
 
 class GoogleSignInScreen extends StatefulWidget {
   const GoogleSignInScreen({Key? key}) : super(key: key);
@@ -39,7 +39,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       CurvedAnimation(parent: _animController, curve: Curves.decelerate),
     );
     GoogleSignIn googleSignIn = GoogleSignIn.instance;
-    unawaited(googleSignIn.initialize(clientId: clientID));
+    unawaited(googleSignIn.initialize(serverClientId: googleWebClientId));
     _animController.forward();
   }
 

@@ -55,7 +55,10 @@ class Event {
       capacity: json['people_needed'],
       imageUrl: json['user_image_url'],
       tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
-      coords: LatLng((json['selected_lat'] as num).toDouble(),(json['selected_lon'] as num).toDouble()),
+      coords: LatLng(
+        (json['selected_lat'] as num).toDouble(),
+        (json['selected_lon'] as num).toDouble(),
+      ),
     );
   }
 }
@@ -101,7 +104,7 @@ Color getColorBasedOnCategory(Event e) {
     case Tag.other:
       return Colors.grey;
     case Tag.skills:
-      return Colors.purple;
+      return const Color(0xFF00A86B);
     case Tag.support:
       return Colors.blue;
   }

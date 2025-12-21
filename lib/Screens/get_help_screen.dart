@@ -569,6 +569,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonFormField<String>(
+                      style: GoogleFonts.poppins(color: primary),
                       initialValue: _selectedDuration,
                       isExpanded: true,
                       decoration: const InputDecoration.collapsed(hintText: ''),
@@ -611,6 +612,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonFormField<int>(
+                      style: GoogleFonts.poppins(color: primary),
                       initialValue: _peopleNeeded,
                       isExpanded: true,
                       decoration: const InputDecoration.collapsed(hintText: ''),

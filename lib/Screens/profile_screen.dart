@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -14,7 +13,6 @@ import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:micro_volunteering_hub/utils/database.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -145,6 +143,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     var userData = ref.watch(userProvider);
 
+    print(userData);
+
     List<Event> userEvents = userData['users_events'] ?? [];
     final String displayName = userData['user_name'] ?? 'Anonymous';
     final String role = 'Community Helper';
@@ -167,7 +167,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
-              await ref.read(authControllerProvider.notifier).logout();
+              await ref
+                  .read(
+                    authControllerProvider.notifier,
+                  )
+                  .logout();
               Navigator.of(context).pop();
             },
             tooltip: 'Log out',
@@ -185,7 +189,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: pickImage,
-                    child: userAvatar(userData["photo_path"]),
+                    child: userAvatar(userData["photo_url"]),
                   ),
                   const SizedBox(height: 12),
                   Text(

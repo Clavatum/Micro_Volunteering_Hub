@@ -6,7 +6,6 @@ class Event {
   final String title;
   final String userId;
   final String eventId;
-
   final DateTime time;
   final String hostName;
   final int capacity;
@@ -55,7 +54,7 @@ class Event {
       capacity: json['people_needed'],
       imageUrl: json['user_image_url'],
       tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
-      coords: LatLng((json['selected_lat'] as num).toDouble(),(json['selected_lon'] as num).toDouble()),
+      coords: LatLng((json['selected_lat'] as num).toDouble(), (json['selected_lon'] as num).toDouble()),
     );
   }
 }

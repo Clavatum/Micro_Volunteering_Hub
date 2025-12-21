@@ -33,7 +33,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickImageFromGallery() async {
     var image = await _imagePicker.pickImage(source: ImageSource.gallery);
-    if (image == null || !mounted) return;
+    if (image == null) return;
     setState(() {
       _image = File(image.path);
     });
@@ -42,7 +42,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickImageFromCamera() async {
     var image = await _imagePicker.pickImage(source: ImageSource.camera);
-    if (image == null || !mounted) return;
+    if (image == null) return;
     setState(() {
       _image = File(image.path);
     });
@@ -98,7 +98,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> uploadToCloudinary() async {
-    if (_image == null || !mounted) return;
+    if (_image == null) return;
     final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
     var request = http.MultipartRequest('POST', url)

@@ -28,7 +28,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(initLocation);
     _initApp();
   }
 
@@ -36,7 +35,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     final service = ref.read(positionServiceProvider);
 
     final result = await service.checkPermission();
-    if (!mounted) return;
 
     switch (result) {
       case LocationPermissionResult.serviceDisabled:
@@ -63,6 +61,8 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
   }
 
   Future<void> _initApp() async {
+    Future.microtask(initLocation);
+
     try {
       final User? user = FirebaseAuth.instance.currentUser;
 

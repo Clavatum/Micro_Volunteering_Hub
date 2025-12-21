@@ -130,113 +130,135 @@ class EventDialog extends ConsumerWidget {
     String? address,
     Map<String, dynamic>? creator,
   ) {
+    final maxHeight = MediaQuery.of(context).size.height * 0.5;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: Colors.white.withAlpha(40),
-              backgroundImage: creator != null ? NetworkImage(creator["photo_url"]) : null,
-              child: creator == null ? const Icon(Icons.person, color: Colors.white70) : null,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.hostName,
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withAlpha(230),
-                    ),
-                  ),
-                  Text(
-                    "Event Organizer",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withAlpha(180),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
-        Text(
-          event.title,
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Colors.white.withAlpha(230),
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxHeight
           ),
-        ),
-
-        const SizedBox(height: 16),
-
-        _infoRow(Icons.people_alt_outlined, "${event.capacity} people needed"),
-
-        const SizedBox(height: 10),
-
-        _infoRow(
-          Icons.schedule,
-          HelperFunctions.formatter.format(event.time),
-        ),
-
-        const SizedBox(height: 10),
-
-        if (event.distanceToUser != -1)
-          _infoRow(
-            Icons.near_me,
-            "${event.distanceToUser} m away",
-          ),
-
-        const SizedBox(height: 10),
-
-        _infoRow(
-          Icons.location_on,
-          address ?? "Loading location...",
-        ),
-
-        const SizedBox(height: 18),
-
-        if (event.tags.isNotEmpty)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Categories",
-                style: TextStyle(
-                  color: Colors.white.withAlpha(200),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: event.tags
-                    .map(
-                      (tag) => Chip(
-                        label: Text(
-                          tag.name.toUpperCase(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        backgroundColor: const Color(0xFF00A86B).withAlpha(150),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom:12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.white.withAlpha(40),
+                      backgroundImage: creator != null ? NetworkImage(creator["photo_url"]) : null,
+                      child: creator == null ? const Icon(Icons.person, color: Colors.white70) : null,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.hostName,
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white.withAlpha(230),
+                            ),
+                          ),
+                          Text(
+                            "Event Organizer",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withAlpha(180),
+                            ),
+                          ),
+                        ],
                       ),
-                    )
-                    .toList(),
-              ),
-            ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 18),
+
+                Text(
+                  event.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withAlpha(230),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                _infoRow(Icons.people_alt_outlined, "${event.capacity} people needed"),
+
+                const SizedBox(height: 10),
+
+                _infoRow(
+                  Icons.schedule,
+                  HelperFunctions.formatter.format(event.time),
+                ),
+
+                const SizedBox(height: 10),
+
+                if (event.distanceToUser != -1)
+                  _infoRow(
+                    Icons.near_me,
+                    "${event.distanceToUser} m away",
+                  ),
+
+                const SizedBox(height: 10),
+
+                _infoRow(
+                  Icons.location_on,
+                  address ?? "Loading location...",
+                ),
+
+                const SizedBox(height: 18),
+
+                if (event.tags.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Categories",
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(200),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: event.tags
+                            .map(
+                              (tag) => Chip(
+                                label: Text(
+                                  tag.name.toUpperCase(),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: const Color(0xFF00A86B).withAlpha(150),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                Text(
+                  event.desc,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withAlpha(220),
+                  ),
+                ),
+              ],
+            )
           ),
+        ),
 
         const SizedBox(height: 26),
 

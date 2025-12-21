@@ -43,11 +43,9 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
       return;
     }
     Position? position = _userData!["user_position"];
-
     if (position == null) {
       return;
     }
-
     _mapController.move(LatLng(position.latitude, position.longitude), 13.0);
   }
 
@@ -90,8 +88,8 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   @override
   Widget build(BuildContext context) {
     final events = ref.watch(eventsProvider);
-    final _userData = ref.watch(userProvider);
-    _currentPosition = _userData["user_position"];
+    _userData = ref.watch(userProvider);
+    _currentPosition = _userData!["user_position"];
 
     final allTags = <String>{for (final e in events) ...e.tags.map((t) => t.name)}.toList();
 

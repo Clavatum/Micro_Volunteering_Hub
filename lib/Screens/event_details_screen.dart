@@ -94,8 +94,9 @@ class EventDetailsScreen extends ConsumerWidget {
                     )
                     .toList(),
               ),
-
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              Text(event.desc),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: canJoin
                     ? () {

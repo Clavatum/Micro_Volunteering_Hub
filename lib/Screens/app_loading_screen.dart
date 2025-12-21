@@ -73,41 +73,8 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       updateLoadingText("Checking internet connection");
       final online = await hasInternet();
 
-<<<<<<< Updated upstream
-    Map<String, dynamic>? userData;
-
-    if(online){
-      updateLoadingText("Fetching user data from Firebase");
-      userData = {
-        "id": user.uid,
-        "user_name": user.displayName ?? "unknown",
-        "user_mail": user.email,
-        "photo_url": user.photoURL ?? "",
-        "updated_at": DateTime.now().millisecondsSinceEpoch,
-      };
-      //Don't upload with photo_path
-      final apiResponse = await createAndStoreUserAPI(userData);
-      if (!apiResponse["ok"]){
-        showGlobalSnackBar(apiResponse["msg"]);
-      }
-      
-      userData["photo_path"] = await downloadAndSaveImage(userData["photo_url"], userData["id"]);
-      await UserLocalDb.saveUserAndActivate(userData);
-    }
-    else{
-      updateLoadingText("Fetching user data from database");
-      userData = await UserLocalDb.getActiveUser();
-    }
-
-    if (userData == null){
-      throw Exception("User data is missing");
-    }
-    Future.microtask((){
-      ref.read(userProvider.notifier).setUser(userData!);
-    });
-    } catch (e){
-=======
       Map<String, dynamic>? userData;
+
       if (online) {
         updateLoadingText("Fetching user data from Firebase");
         userData = {
@@ -119,7 +86,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
         };
         //Don't upload with photo_path
         final apiResponse = await createAndStoreUserAPI(userData);
-
         if (!apiResponse["ok"]) {
           showGlobalSnackBar(apiResponse["msg"]);
         }
@@ -134,9 +100,10 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       if (userData == null) {
         throw Exception("User data is missing");
       }
-      ref.read(userProvider.notifier).setUser(userData);
+      Future.microtask(() {
+        ref.read(userProvider.notifier).setUser(userData!);
+      });
     } catch (e) {
->>>>>>> Stashed changes
       showGlobalSnackBar("App initialization failed");
     }
   }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-<<<<<<< Updated upstream
-=======
+
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
->>>>>>> Stashed changes
+import 'package:geolocator/geolocator.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -22,6 +23,8 @@ class HelpOthersScreen extends ConsumerStatefulWidget {
 class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   late MapController _mapController;
   List<String> selectedTags = [];
+  Map<String, dynamic>? _userData;
+  Position? _currentPosition;
 
   @override
   void initState() {
@@ -36,20 +39,16 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   }
 
   void _centerMapToUser() {
-    final userData = ref.read(userProvider);
+    if (_userData == null || _userData!.isEmpty) {
+      return;
+    }
+    Position? position = _userData!["user_position"];
 
-    if (userData.isEmpty) {
+    if (position == null) {
       return;
     }
 
-    double? lat = userData['user_latitude'];
-    double? lon = userData['user_longitude'];
-
-    if (lat == null || lon == null) {
-      return;
-    }
-
-    _mapController.move(LatLng(lat, lon), 13.0);
+    _mapController.move(LatLng(position.latitude, position.longitude), 13.0);
   }
 
   void _showEventDialog(Event event) {
@@ -91,16 +90,14 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   @override
   Widget build(BuildContext context) {
     final events = ref.watch(eventsProvider);
-    final userData = ref.watch(userProvider);
+    final _userData = ref.watch(userProvider);
+    _currentPosition = _userData["user_position"];
 
     final allTags = <String>{for (final e in events) ...e.tags.map((t) => t.name)}.toList();
 
     final filteredEvents = selectedTags.isEmpty
         ? events
         : events.where((e) => e.tags.any((t) => selectedTags.contains(t.name))).toList();
-
-    double? userLat = double.tryParse(userData['user_latitude'] ?? '');
-    double? userLon = double.tryParse(userData['user_longitude'] ?? '');
     const Color primary = Color(0xFF00A86B);
 
     return Scaffold(
@@ -142,8 +139,8 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                   mapController: _mapController,
                   options: MapOptions(
                     onMapReady: _centerMapToUser,
-                    initialCenter: userLat != null && userLon != null
-                        ? LatLng(userLat, userLon)
+                    initialCenter: _currentPosition != null
+                        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
                         : const LatLng(41.0082, 28.9784),
                     initialZoom: 13.0,
                     minZoom: 5.0,
@@ -157,9 +154,9 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                     ),
                     MarkerLayer(
                       markers: [
-                        if (userLat != null && userLon != null)
+                        if (_currentPosition != null)
                           Marker(
-                            point: LatLng(userLat, userLon),
+                            point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                             width: 50,
                             height: 50,
                             child: GestureDetector(

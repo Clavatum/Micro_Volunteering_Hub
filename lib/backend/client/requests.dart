@@ -55,32 +55,18 @@ Future<Map<String, dynamic>> createAndStoreUserAPI(Map<String, dynamic>? userDat
   }
 }
 
-<<<<<<< Updated upstream
-Future<FetchEventsResult> fetchEventsAPI(int? since) async{
-  try{
-    final response = await http.get(
-      Uri.parse((since == null) ? "$localServerURL/events" : "$localServerURL/events?since=$since"),
-    ).timeout(const Duration(seconds: 10));
-    if (response.statusCode == 200){
-      final body = jsonDecode(response.body);
-      print(body["events"]);
-      return FetchEventsResult((body["events"] as List? ?? []).map((e) => Event.fromJson(e)).toList(),
-        body["last_ts"]);
-    }
-    else{
-=======
 Future<FetchEventsResult> fetchEventsAPI(int? since) async {
   try {
     final response = await http
         .get(
           Uri.parse((since == null) ? "$localServerURL/events" : "$localServerURL/events?since=$since"),
         )
-        .timeout(const Duration(seconds: 5));
+        .timeout(const Duration(seconds: 10));
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
+      print(body["events"]);
       return FetchEventsResult((body["events"] as List? ?? []).map((e) => Event.fromJson(e)).toList(), body["last_ts"]);
     } else {
->>>>>>> Stashed changes
       print("fetchEventsAPI: Request to API has failed with status code ${response.statusCode}.");
       return FetchEventsResult([], since);
     }

@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -14,7 +13,6 @@ import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:micro_volunteering_hub/utils/database.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -121,16 +119,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   int _selectedTab = 0;
 
-  Widget userAvatar(String? localPath){
-    if(localPath == null || localPath.isEmpty){
+  Widget userAvatar(String? localPath) {
+    if (localPath == null || localPath.isEmpty) {
       return const CircleAvatar(
         radius: 52,
         backgroundColor: primary,
-        child: ClipOval(
-          child: Icon(Icons.person, size: 64, color: Colors.white)
-        ),
+        child: ClipOval(child: Icon(Icons.person, size: 64, color: Colors.white)),
       );
-    }else{
+    } else {
       return CircleAvatar(
         radius: 52,
         backgroundColor: primary,
@@ -138,10 +134,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
-
     var userData = ref.watch(userProvider);
+
+    print(userData);
 
     List<Event> userEvents = userData['users_events'] ?? [];
     final String displayName = userData['user_name'] ?? 'Anonymous';
@@ -165,7 +163,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black54),
             onPressed: () async {
-              await ref.read(authControllerProvider.notifier).logout();
+              await ref
+                  .read(
+                    authControllerProvider.notifier,
+                  )
+                  .logout();
               Navigator.of(context).pop();
             },
             tooltip: 'Log out',
@@ -183,7 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: pickImage,
-                    child: userAvatar(userData["photo_path"]),
+                    child: userAvatar(userData["photo_url"]),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -314,7 +316,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 80, height: 60,
+                            width: 80,
+                            height: 60,
                             color: Colors.green,
                             child: Icon(Icons.event, size: 48, color: Colors.black),
                           );

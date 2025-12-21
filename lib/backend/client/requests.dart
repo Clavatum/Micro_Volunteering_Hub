@@ -13,9 +13,7 @@ class FetchEventsResult {
   FetchEventsResult(this.events, this.lastTs);
 }
 
-Future<Map<String, dynamic>> createEventAPI(
-  Map<String, dynamic>? eventData,
-) async {
+Future<Map<String, dynamic>> createEventAPI(Map<String, dynamic>? eventData) async {
   try {
     final response = await http
         .post(
@@ -29,20 +27,14 @@ Future<Map<String, dynamic>> createEventAPI(
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      return {
-        "ok": false,
-        "msg":
-            "Request to API has failed with status code ${response.statusCode}.",
-      };
+      return {"ok": false, "msg": "Request to API has failed with status code ${response.statusCode}."};
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
   }
 }
 
-Future<Map<String, dynamic>> createAndStoreUserAPI(
-  Map<String, dynamic>? userData,
-) async {
+Future<Map<String, dynamic>> createAndStoreUserAPI(Map<String, dynamic>? userData) async {
   try {
     final response = await http
         .post(
@@ -56,11 +48,7 @@ Future<Map<String, dynamic>> createAndStoreUserAPI(
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      return {
-        "ok": false,
-        "msg":
-            "Request to API has failed with status code ${response.statusCode}.",
-      };
+      return {"ok": false, "msg": "Request to API has failed with status code ${response.statusCode}."};
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
@@ -71,23 +59,15 @@ Future<FetchEventsResult> fetchEventsAPI(int? since) async {
   try {
     final response = await http
         .get(
-          Uri.parse(
-            (since == null)
-                ? "$localServerURL/events"
-                : "$localServerURL/events?since=$since",
-          ),
+          Uri.parse((since == null) ? "$localServerURL/events" : "$localServerURL/events?since=$since"),
         )
-        .timeout(const Duration(seconds: 5));
+        .timeout(const Duration(seconds: 10));
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
-      return FetchEventsResult(
-        (body["events"] as List? ?? []).map((e) => Event.fromJson(e)).toList(),
-        body["last_ts"],
-      );
+      print(body["events"]);
+      return FetchEventsResult((body["events"] as List? ?? []).map((e) => Event.fromJson(e)).toList(), body["last_ts"]);
     } else {
-      print(
-        "fetchEventsAPI: Request to API has failed with status code ${response.statusCode}.",
-      );
+      print("fetchEventsAPI: Request to API has failed with status code ${response.statusCode}.");
       return FetchEventsResult([], since);
     }
   } on TimeoutException {

@@ -129,14 +129,15 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     var apiResponse = await createEventAPI(eventData);
     if (apiResponse["ok"]) {
       ref.read(userProvider.notifier).addUserEvent(event);
-      ref.read(eventsProvider.notifier).addEvent(event);
+
+      if (Navigator.canPop(context)) {
+        final mainMenuContext = Navigator.of(context);
+      }
       return true;
     } else {
       showGlobalSnackBar(apiResponse["msg"]);
       return false;
     }
-
-    //await FirebaseFirestore.instance.collection('event_info').add(eventData);
   }
 
   Future<void> handleImage() async {

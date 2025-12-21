@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-final GlobalKey<ScaffoldMessengerState> snackbarKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> snackbarKey =
+    GlobalKey<ScaffoldMessengerState>();
 
-void showGlobalSnackBar(String message){
+void showGlobalSnackBar(String message) {
   snackbarKey.currentState?.clearSnackBars();
   snackbarKey.currentState?.showSnackBar(
     SnackBar(
@@ -11,7 +12,7 @@ void showGlobalSnackBar(String message){
         message,
         style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
       ),
-      backgroundColor: Color(0xFF5E35B1),
+      backgroundColor: Color(0xFF00A86B),
     ),
   );
 }

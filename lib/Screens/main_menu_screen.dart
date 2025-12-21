@@ -104,7 +104,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       try {
         final position = ref.watch(positionNotifierProvider);
         if (position == null) return;
-        ref.read(userProvider.notifier).setUserPosition(lat: position.latitude, lon: position.longitude);
+        ref.read(userProvider.notifier).setUserPosition(position: position);
         _userData = ref.watch(userProvider);
       } catch (e) {
         print("Error while reading position: $e");
@@ -117,11 +117,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   void _setDistances() {
-    if (_events == null || _userData == null) return;
+    if (_events == null || _userData == null || _userData!["user_position"] == null) return;
     for (Event e in _events!) {
       e.setIsClose(
-        _userData!['user_latitude'] ?? -1000000000,
-        _userData!['user_longitude'] ?? -1000000000,
+        _userData!['user_position'].latitude ?? -1000000000,
+        _userData!['user_position'].longitude ?? -1000000000,
       );
     }
   }

@@ -100,7 +100,7 @@ Color getColorBasedOnCategory(Event e) {
     case Tag.other:
       return Colors.grey;
     case Tag.skills:
-      return Colors.purple;
+      return const Color(0xFF00A86B);
     case Tag.support:
       return Colors.blue;
   }

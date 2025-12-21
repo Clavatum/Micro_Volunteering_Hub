@@ -124,7 +124,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return const CircleAvatar(
         radius: 52,
         backgroundColor: primary,
-        child: ClipOval(child: Icon(Icons.person, size: 64, color: Colors.white)),
+        child: ClipOval(
+          child: Icon(Icons.person, size: 64, color: Colors.white),
+        ),
       );
     } else {
       return CircleAvatar(
@@ -148,20 +150,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: primary,
         elevation: 0,
         centerTitle: true,
         title: Text(
           'Profile',
           style: GoogleFonts.poppins(
-            color: Colors.black87,
+            color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black54),
+            icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
               await ref
                   .read(
@@ -201,7 +203,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     role,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black45,
+                      color: primary,
                     ),
                   ),
                 ],
@@ -231,7 +233,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'Events Created',
-                          style: GoogleFonts.poppins(color: Colors.black54),
+                          style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
                     ),
@@ -258,7 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'Events Attended',
-                          style: GoogleFonts.poppins(color: Colors.black54),
+                          style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
                     ),
@@ -272,8 +274,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
-                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
+                      backgroundColor: _selectedTab == 0
+                          ? primary
+                          : Colors.white,
+                      foregroundColor: _selectedTab == 0
+                          ? Colors.white
+                          : primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -319,7 +325,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             width: 80,
                             height: 60,
                             color: Colors.green,
-                            child: Icon(Icons.event, size: 48, color: Colors.black),
+                            child: Icon(
+                              Icons.event,
+                              size: 48,
+                              color: Colors.black,
+                            ),
                           );
                         },
                       ),

@@ -23,7 +23,7 @@ class AppLoadingScreen extends ConsumerStatefulWidget {
 }
 
 class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
-  String loadingText = "Initializing application";
+  String loadingText = "Initializing Application";
 
   @override
   void initState() {
@@ -38,13 +38,13 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 
     switch (result) {
       case LocationPermissionResult.serviceDisabled:
-        showGlobalSnackBar("Location service is disabled");
+        showGlobalSnackBar("Location Service is Disabled");
         return;
       case LocationPermissionResult.denied:
-        showGlobalSnackBar("Location permission is denied");
+        showGlobalSnackBar("Location Permission is Denied");
         return;
       case LocationPermissionResult.deniedForever:
-        showGlobalSnackBar("Location permission is denied forever");
+        showGlobalSnackBar("Location Permission is Denied Forever");
         return;
       case LocationPermissionResult.ok:
         await ref.read(positionNotifierProvider.notifier).updatePosition();
@@ -70,13 +70,12 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
         return;
       }
 
-      updateLoadingText("Checking internet connection");
+      updateLoadingText("Checking Internet Connection");
       final online = await hasInternet();
 
       Map<String, dynamic>? userData;
-
       if (online) {
-        updateLoadingText("Fetching user data from Firebase");
+        updateLoadingText("Fetching User Data From Firebase");
         userData = {
           "id": user.uid,
           "user_name": user.displayName ?? "unknown",
@@ -90,21 +89,23 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
           showGlobalSnackBar(apiResponse["msg"]);
         }
 
-        userData["photo_path"] = await downloadAndSaveImage(userData["photo_url"], userData["id"]);
+        userData["photo_path"] = await downloadAndSaveImage(
+          userData["photo_url"],
+          userData["id"],
+        );
         await UserLocalDb.saveUserAndActivate(userData);
       } else {
-        updateLoadingText("Fetching user data from database");
+        updateLoadingText("Fetching User Data From Database");
         userData = await UserLocalDb.getActiveUser();
       }
 
       if (userData == null) {
-        throw Exception("User data is missing");
+        throw Exception("User Data is Missing");
       }
-      Future.microtask(() {
-        ref.read(userProvider.notifier).setUser(userData!);
-      });
+      if (!mounted) return;
+      ref.read(userProvider.notifier).setUser(userData!);
     } catch (e) {
-      showGlobalSnackBar("App initialization failed");
+      showGlobalSnackBar("App Initialization Failed");
     }
   }
 
@@ -132,7 +133,10 @@ Widget loadingScreen(String loadingText) {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFf6d365), Color(0xFFfda085)],
+          colors: [
+            Color.fromARGB(255, 255, 255, 255),
+            Color.fromARGB(255, 130, 228, 130),
+          ],
         ),
       ),
       child: Center(
@@ -144,12 +148,12 @@ Widget loadingScreen(String loadingText) {
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF5E35B1),
+                color: Color(0xFF00A86B),
               ),
             ),
             SizedBox(height: 20),
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(Color(0xFF5E35B1)),
+              valueColor: AlwaysStoppedAnimation(Color(0xFF00A86B)),
             ),
             SizedBox(height: 40),
             Text(
@@ -157,7 +161,7 @@ Widget loadingScreen(String loadingText) {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF5E35B1),
+                color: Color(0xFF00A86B),
               ),
             ),
           ],

@@ -1,3 +1,5 @@
+import json
+import os
 import firebase_admin
 import logging
 from firebase_admin import credentials, firestore
@@ -7,7 +9,8 @@ from models import *
 from utils import *
 
 #Connect the Firebase database
-cred = credentials.Certificate("service-account-file.json")
+firebase_json = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+cred = credentials.Certificate(firebase_json)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 app = FastAPI(title = "QuickHelp")

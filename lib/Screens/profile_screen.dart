@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -14,7 +13,6 @@ import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:micro_volunteering_hub/utils/database.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -101,7 +99,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> uploadToCloudinary() async {
     if (_image == null || !mounted) return;
-    final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final url = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
 
     var request = http.MultipartRequest('POST', url)
       ..fields['upload_preset'] = unsignedPresetName
@@ -121,16 +121,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   int _selectedTab = 0;
 
-  Widget userAvatar(String? localPath){
-    if(localPath == null || localPath.isEmpty){
+  Widget userAvatar(String? localPath) {
+    if (localPath == null || localPath.isEmpty) {
       return const CircleAvatar(
         radius: 52,
         backgroundColor: primary,
         child: ClipOval(
-          child: Icon(Icons.person, size: 64, color: Colors.white)
+          child: Icon(Icons.person, size: 64, color: Colors.white),
         ),
       );
-    }else{
+    } else {
       return CircleAvatar(
         radius: 52,
         backgroundColor: primary,
@@ -138,10 +138,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
-
     var userData = ref.watch(userProvider);
+
+    print(userData);
 
     List<Event> userEvents = userData['users_events'] ?? [];
     final String displayName = userData['user_name'] ?? 'Anonymous';
@@ -150,22 +152,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: primary,
         elevation: 0,
         centerTitle: true,
         title: Text(
           'Profile',
           style: GoogleFonts.poppins(
-            color: Colors.black87,
+            color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black54),
+            icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
-              await ref.read(authControllerProvider.notifier).logout();
+              await ref
+                  .read(
+                    authControllerProvider.notifier,
+                  )
+                  .logout();
               Navigator.of(context).pop();
             },
             tooltip: 'Log out',
@@ -183,7 +189,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: pickImage,
-                    child: userAvatar(userData["photo_path"]),
+                    child: userAvatar(userData["photo_url"]),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -199,7 +205,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     role,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.black45,
+                      color: primary,
                     ),
                   ),
                 ],
@@ -229,7 +235,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'Events Created',
-                          style: GoogleFonts.poppins(color: Colors.black54),
+                          style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
                     ),
@@ -256,7 +262,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         const SizedBox(height: 12),
                         Text(
                           'Events Attended',
-                          style: GoogleFonts.poppins(color: Colors.black54),
+                          style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
                     ),
@@ -270,8 +276,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
-                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
+                      backgroundColor: _selectedTab == 0
+                          ? primary
+                          : Colors.white,
+                      foregroundColor: _selectedTab == 0
+                          ? Colors.white
+                          : primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -314,9 +324,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            width: 80, height: 60,
+                            width: 80,
+                            height: 60,
                             color: Colors.green,
-                            child: Icon(Icons.event, size: 48, color: Colors.black),
+                            child: Icon(
+                              Icons.event,
+                              size: 48,
+                              color: Colors.black,
+                            ),
                           );
                         },
                       ),

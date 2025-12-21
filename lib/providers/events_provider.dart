@@ -15,9 +15,9 @@ class EventsProvider extends StateNotifier<List<Event>> {
 
   void removeEventById(String id) {
     state = state.where((e) => e.eventId != id).toList();
-    }
+  }
 
-  void addEvents(List<Event> newEvents){
+  void addEvents(List<Event> newEvents) {
     final existingIds = state.map((e) => e.eventId).toSet();
     final filtered = newEvents.where((e) => !existingIds.contains(e.eventId)).toList();
     if (filtered.isEmpty) return;

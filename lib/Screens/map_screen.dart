@@ -16,7 +16,8 @@ class MapScreen extends ConsumerStatefulWidget {
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProviderStateMixin{
+class _MapScreenState extends ConsumerState<MapScreen>
+    with SingleTickerProviderStateMixin {
   Position? _currentPosition;
   final MapController _mapController = MapController();
   double _currentZoom = 13;
@@ -78,7 +79,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
       setState(() {
         _currentZoom += 1;
       });
-      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center =
+          _currentCenter ??
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
@@ -88,7 +91,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
       setState(() {
         _currentZoom -= 1;
       });
-      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center =
+          _currentCenter ??
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
@@ -105,7 +110,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Colors.blue.shade50, Colors.blue.shade100],
+              colors: [Colors.green, Colors.lightGreen],
             ),
           ),
           child: Center(
@@ -115,7 +120,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                 CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.blue.shade700,
+                    Colors.green,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -124,7 +129,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.blue.shade700,
+                    color: Colors.green,
                   ),
                 ),
               ],
@@ -151,10 +156,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
               maxZoom: 18,
               onTap: (tapPosition, point) async {
                 _animationController.forward();
-                var selectedAddress = await PositionService.getHumanReadableAddressFromLatLng(
-                  point.latitude,
-                  point.longitude,
-                );
+                var selectedAddress =
+                    await PositionService.getHumanReadableAddressFromLatLng(
+                      point.latitude,
+                      point.longitude,
+                    );
                 setState(() {
                   tappedPos = point;
                   _selectedAddress = selectedAddress;
@@ -169,7 +175,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 userAgentPackageName: userAgent,
                 maxZoom: 19,
               ),
@@ -177,7 +184,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                 markers: [
                   if (_currentPosition != null)
                     Marker(
-                      point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                      point: LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
                       width: 50,
                       height: 50,
                       child: GestureDetector(
@@ -188,18 +198,18 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                                 'Your location',
                                 style: TextStyle(color: Colors.white),
                               ),
-                              backgroundColor: Colors.blue,
+                              backgroundColor: Colors.green,
                               duration: const Duration(seconds: 1),
                             ),
                           );
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue.withAlpha(220),
+                            color: Colors.green,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.blue.withAlpha(150),
+                                color: Colors.green.withAlpha(100),
                                 blurRadius: 12,
                                 spreadRadius: 3,
                               ),
@@ -271,7 +281,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
             left: 16,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.green,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -284,7 +294,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                color: Colors.black87,
+                color: Colors.white,
               ),
             ),
           ),
@@ -294,11 +304,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
             right: 16,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.green,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(26),
+                    color: Colors.white.withAlpha(26),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -310,14 +320,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                   IconButton(
                     onPressed: incrementZoom,
                     icon: const Icon(Icons.add, size: 22),
-                    color: Colors.black87,
+                    color: Colors.white,
                     splashRadius: 24,
                   ),
                   Container(height: 1, width: 32, color: Colors.grey.shade200),
                   IconButton(
                     onPressed: decreaseZoom,
                     icon: const Icon(Icons.remove, size: 22),
-                    color: Colors.black87,
+                    color: Colors.white,
                     splashRadius: 24,
                   ),
                 ],
@@ -331,14 +341,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade600, Colors.blue.shade400],
+                  colors: [Colors.green.shade600, Colors.green.shade400],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withAlpha(100),
+                    color: Colors.green.withAlpha(100),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -485,7 +495,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 14,
                                     ),
-                                    backgroundColor: Colors.blue.shade600,
+                                    backgroundColor: Colors.green.shade600,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(

@@ -8,8 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 
-const googleWebClientId =
-    String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+const googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
 
 class GoogleSignInScreen extends StatefulWidget {
   const GoogleSignInScreen({Key? key}) : super(key: key);
@@ -24,7 +23,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? _user;
 
-  Color primary = Color(0xFF5E35B1);
+  Color primary = Color(0xFF00A86B);
   late Animation<double> _animFade;
   late Animation<Offset> _animSlide;
   @override
@@ -51,7 +50,8 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
 
   Future<void> _logInWithGoogle(BuildContext context) async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance
+          .authenticate();
 
       if (googleUser == null) {
         showGlobalSnackBar("Login cancelled");
@@ -62,7 +62,8 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential);
       if (userCredential.user != null) {
         showGlobalSnackBar("Login successful.");
       } else {
@@ -70,7 +71,9 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       }
     } on PlatformException catch (e) {
       if (e.code == "network_error") {
-        showGlobalSnackBar("Network error, please check your internet connection.");
+        showGlobalSnackBar(
+          "Network error, please check your internet connection.",
+        );
       }
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
@@ -78,7 +81,9 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
       }
     } catch (e) {
       print("Error in _logInWithGoogle(): ${e.toString()}");
-      showGlobalSnackBar("Something went wrong while logging in with Google.",);
+      showGlobalSnackBar(
+        "Something went wrong while logging in with Google.",
+      );
     }
   }
 
@@ -101,8 +106,8 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Sign in with Google to continue',
-                style: GoogleFonts.poppins(color: Colors.black87),
+                'Sign in With Google to Continue',
+                style: GoogleFonts.poppins(color: Colors.green),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -150,7 +155,10 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFf6d365), Color(0xFFfda085)],
+            colors: [
+              Color.fromARGB(255, 255, 255, 255),
+              Color.fromARGB(255, 130, 228, 130),
+            ],
           ),
         ),
         child: signInAnimation(),

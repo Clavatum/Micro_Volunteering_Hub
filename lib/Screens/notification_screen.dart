@@ -23,12 +23,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
     await firestore.runTransaction((tx) async {
       final joinRef = firestore.collection('join_requests').doc('${r.eventId}_${r.requesterId}');
-      final eventRef = firestore.collection('events').doc(r.eventId);
+      final eventRef = firestore.collection('event_info').doc(r.eventId);
 
       final eventSnap = await tx.get(eventRef);
 
       final List ids = List.from(eventSnap['attendent_ids'] ?? []);
-      final int capacity = eventSnap['capacity'];
+      final int capacity = eventSnap['people_needed'];
 
       if (ids.length >= capacity) {
         throw Exception('Event full');

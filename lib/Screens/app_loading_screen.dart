@@ -80,7 +80,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 
       Map<String, dynamic>? userData;
       if (online) {
-        updateLoadingText("Fetching User Data From Firebase");
+        updateLoadingText("Loading Kindness...");
         userData = {
           "id": user.uid,
           "user_name": user.displayName ?? "unknown",

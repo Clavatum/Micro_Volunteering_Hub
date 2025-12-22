@@ -76,7 +76,7 @@ class EventsPreview extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  events[index].title,
+                                  events[index].title.isEmpty ? "API error" : events[index].title,
                                   style: GoogleFonts.poppins(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,

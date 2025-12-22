@@ -81,11 +81,13 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
     required String hostId,
   }) async {
     final firestore = FirebaseFirestore.instance;
-
+    /* userId represents id of requesting persons id whereas hostId repr. host
+ */
     final requestId = "${eventId}_$userId";
     var data = {
+      'requester_name': _userData!['user_name'],
       'event_id': eventId,
-      'user_id': userId,
+      'requester_id': userId,
       'host_id': hostId,
       'status': 'pending',
       'requested_at': FieldValue.serverTimestamp(),
@@ -132,7 +134,6 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final requests = ref.watch(joinRequestProvider);
     final events = ref.watch(eventsProvider);
     final watchedUser = ref.watch(userProvider);
 

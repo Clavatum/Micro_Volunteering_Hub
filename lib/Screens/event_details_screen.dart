@@ -132,6 +132,7 @@ class EventDetailsScreen extends ConsumerWidget {
               ElevatedButton(
                 onPressed: canJoin
                     ? () {
+                        _requestJoin();
                         showGlobalSnackBar("requested");
                       }
                     : null,

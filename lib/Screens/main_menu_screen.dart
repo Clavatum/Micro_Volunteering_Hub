@@ -37,7 +37,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   Timer? _positionTimer;
   Timer? _pollingTimer;
-  int? _lastFetchTs;
+  String? _lastEventFetchCursor;
   bool _isFetching = false;
 
   @override
@@ -63,9 +63,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     if (_isFetching) return;
     _isFetching = true;
     try {
-      final fetchedEvents = await fetchEventsAPI(_lastFetchTs);
+      final fetchedEvents = await fetchEventsAPI(_lastEventFetchCursor);
       if (fetchedEvents.events.isNotEmpty) {
-        _lastFetchTs = fetchedEvents.lastTs;
+        _lastEventFetchCursor = fetchedEvents.cursor;
         ref.read(eventsProvider.notifier).addEvents(fetchedEvents.events);
         if (_userData != null) {
           ref

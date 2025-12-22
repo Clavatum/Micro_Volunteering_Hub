@@ -4,9 +4,9 @@ import 'package:micro_volunteering_hub/helper_functions.dart';
 
 class Event {
   final String title;
+  final String desc;
   final String userId;
   final String eventId;
-
   final DateTime time;
   final String hostName;
   final int capacity;
@@ -21,6 +21,7 @@ class Event {
     required this.eventId,
     required this.userId,
     required this.title,
+    required this.desc,
     required this.time,
     required this.hostName,
     required this.capacity,
@@ -49,16 +50,14 @@ class Event {
     return Event(
       eventId: json["id"],
       userId: json['user_id'] ?? '',
-      title: json['description'] ?? '',
+      title: json['title'] ?? '',
+      desc: json['description'] ?? '',
       time: parsedDate,
       hostName: json['host_name'] ?? 'unknown',
       capacity: json['people_needed'],
       imageUrl: json['user_image_url'],
       tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
-      coords: LatLng(
-        (json['selected_lat'] as num).toDouble(),
-        (json['selected_lon'] as num).toDouble(),
-      ),
+      coords: LatLng((json['selected_lat'] as num).toDouble(), (json['selected_lon'] as num).toDouble()),
     );
   }
 }

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/chat_room_screen.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 
 class EventsPreview extends StatelessWidget {
-  const EventsPreview({super.key, required this.events});
+  const EventsPreview({
+    super.key,
+    required this.events,
+  });
   final List<Event> events;
   @override
   Widget build(BuildContext context) {

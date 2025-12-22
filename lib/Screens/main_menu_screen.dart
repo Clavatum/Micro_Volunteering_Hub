@@ -228,7 +228,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? "Guest";
-    var pRequests = ref.watch(joinRequestProvider);
+    var _requestsB = ref.watch(joinRequestProvider);
+    var pRequests = _requestsB.where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid).toList();
 
     Color activeColor = pRequests.isEmpty ? const Color.fromARGB(255, 50, 50, 50) : Colors.red;
 

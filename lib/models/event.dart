@@ -15,7 +15,7 @@ class Event {
   final LatLng coords;
   bool isClose;
   int distanceToUser;
-  final List<String> attendendtIds;
+  final List<String> attendantIds;
 
   Event({
     required this.eventId,
@@ -29,7 +29,7 @@ class Event {
     required this.tags,
     required this.coords,
     this.distanceToUser = -1,
-    this.attendendtIds = const [],
+    this.attendantIds = const [],
   }) : isClose = false;
 
   void setIsClose(double lat, double lon) {
@@ -48,6 +48,7 @@ class Event {
   factory Event.fromJson(Map<String, dynamic> json) {
     final DateTime parsedDate = DateTime.parse(json["starting_date"]).toLocal();
     return Event(
+      attendantIds: List<String>.from(json['attendent_ids'] ?? []),
       eventId: json["id"],
       userId: json['user_id'] ?? '',
       title: json['title'] ?? '',

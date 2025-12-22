@@ -3,6 +3,10 @@ import 'package:micro_volunteering_hub/models/join_request.dart';
 
 class JoinRequestsProvider extends StateNotifier<List<JoinRequest>> {
   JoinRequestsProvider() : super([]);
+  /*
+      ONLY USERS JOIN REQUESTSSS!!!!
+  
+   */
 
   void addJoinRequest(JoinRequest request) {
     state = [...state, request];
@@ -13,9 +17,10 @@ class JoinRequestsProvider extends StateNotifier<List<JoinRequest>> {
   }
 
   void removeJoinRequest(JoinRequest request) {
-    var newState = state;
-    newState.remove(request);
-    state = newState;
+    state = [
+      for (final r in state)
+        if (!(r.eventId == request.eventId && r.requesterId == request.requesterId)) r,
+    ];
   }
 }
 

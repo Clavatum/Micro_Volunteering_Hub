@@ -56,7 +56,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ),
       ),
 
-      // 🔴 CHAT BODY
       body: Column(
         children: [
           Expanded(
@@ -114,7 +113,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
           ),
 
-          // 🔴 INPUT BAR
           if (canChat)
             SafeArea(
               child: Container(

@@ -232,34 +232,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Events Created',
-                          style: GoogleFonts.poppins(color: primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          //placeholder
-                          '0',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Events Attended',
+                          'Events Active',
                           style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
@@ -274,12 +247,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 0
-                          ? primary
-                          : Colors.white,
-                      foregroundColor: _selectedTab == 0
-                          ? Colors.white
-                          : primary,
+                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
+                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

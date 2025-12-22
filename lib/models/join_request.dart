@@ -1,8 +1,9 @@
 class JoinRequest {
-  final String eventId, hostId, attendentId, status;
+  final String eventId, hostId, requesterId, status, requesterName;
 
   const JoinRequest({
-    required this.attendentId,
+    required this.requesterId,
+    required this.requesterName,
     required this.hostId,
     required this.status,
     required this.eventId,
@@ -10,10 +11,11 @@ class JoinRequest {
 
   factory JoinRequest.fromJson(Map<String, dynamic> json) {
     return JoinRequest(
+      requesterName: json["requester_name"],
       eventId: json["event_id"],
-      hostId: json['user_id'] ?? '',
+      hostId: json['host_id'] ?? '',
       status: json['status'] ?? '',
-      attendentId: json['attended_id'] ?? '',
+      requesterId: json['requester_id'] ?? '',
     );
   }
 }

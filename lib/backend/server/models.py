@@ -10,6 +10,7 @@ class Event(BaseModel):
     selected_lon: float
     user_image_url: Optional[str] = None
     categories: List[str]
+    title: str
     description: str
     people_needed: int = Field(..., gt=0)
     duration: int = Field(..., gt=0)

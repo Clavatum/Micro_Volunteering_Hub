@@ -32,9 +32,14 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
   }
 
   Future<void> initLocation() async {
+    // Read providers synchronously so we don't call `ref` after an await
     final service = ref.read(positionServiceProvider);
+    final positionNotifier = ref.read(positionNotifierProvider.notifier);
 
     final result = await service.checkPermission();
+
+    // If the widget was disposed while awaiting, bail out
+    if (!mounted) return;
 
     switch (result) {
       case LocationPermissionResult.serviceDisabled:
@@ -47,7 +52,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
         showGlobalSnackBar("Location Permission is Denied Forever");
         return;
       case LocationPermissionResult.ok:
-        await ref.read(positionNotifierProvider.notifier).updatePosition();
+        await positionNotifier.updatePosition();
     }
   }
 
@@ -75,7 +80,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
 
       Map<String, dynamic>? userData;
       if (online) {
-        updateLoadingText("Fetching User Data From Firebase");
+        updateLoadingText("Loading Kindness...");
         userData = {
           "id": user.uid,
           "user_name": user.displayName ?? "unknown",

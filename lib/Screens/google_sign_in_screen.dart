@@ -97,17 +97,33 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Welcome',
+                'QuickHelp',
+                style: GoogleFonts.poppins(
+                  fontSize: 50,
+                  fontWeight: FontWeight.w700,
+                  color: primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Image.asset(
+                'assets/icons/QuickHelp-logo.png',
+                width: 160,
+                height: 160,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 80),
+              Text(
+                'Welcome!',
                 style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               Text(
-                'Sign in With Google to Continue',
-                style: GoogleFonts.poppins(color: Colors.green),
+                'Sign in With Google to Feel Better',
+                style: GoogleFonts.poppins(color: Colors.green, fontSize: 16),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -123,7 +139,7 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
                     ),
                   ),
                   icon: const Icon(Icons.login, size: 20),
-                  label: const Text('Sign in with Google'),
+                  label: const Text('Sign in With Google'),
                   onPressed: () async {
                     await _logInWithGoogle(context);
                   },
@@ -139,17 +155,6 @@ class _GoogleSignInScreenState extends State<GoogleSignInScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: primary,
-        elevation: 2,
-        title: Text(
-          'Sign in',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/models/join_request.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
+
+import 'chat_screen.dart';
 
 class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
@@ -23,12 +26,12 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
     await firestore.runTransaction((tx) async {
       final joinRef = firestore.collection('join_requests').doc('${r.eventId}_${r.requesterId}');
-      final eventRef = firestore.collection('events').doc(r.eventId);
+      final eventRef = firestore.collection('event_info').doc(r.eventId);
 
       final eventSnap = await tx.get(eventRef);
 
-      final List ids = List.from(eventSnap['attendent_ids'] ?? []);
-      final int capacity = eventSnap['capacity'];
+      final List ids = List.from(eventSnap['attendant_ids'] ?? []);
+      final int capacity = eventSnap['people_needed'];
 
       if (ids.length >= capacity) {
         throw Exception('Event full');
@@ -36,7 +39,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
 
       tx.update(joinRef, {'status': 'approved'});
       tx.update(eventRef, {
-        'attendent_ids': FieldValue.arrayUnion([r.requesterId]),
+        'attendant_ids': FieldValue.arrayUnion([r.requesterId]),
       });
     });
 
@@ -56,7 +59,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   Widget build(BuildContext context) {
     const Color primary = Color(0xFF00A86B);
     var events = ref.watch(eventsProvider);
-    var _requests = ref.watch(joinRequestProvider);
+    var _requestsB = ref.watch(joinRequestProvider);
+    var _requests = _requestsB.where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid).toList();
 
     String getEventName(JoinRequest req) {
       final e = events.where((e) => e.eventId == req.eventId);
@@ -68,6 +72,23 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     }
 
     return Scaffold(
+      floatingActionButton: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: primary,
+        ),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(),
+            ),
+          );
+        },
+        label: Icon(
+          color: Colors.white,
+          Icons.message,
+          size: 30,
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: primary,
         elevation: 2,

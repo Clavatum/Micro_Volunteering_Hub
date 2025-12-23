@@ -15,7 +15,8 @@ WRITE_CONCURRENCY = 10
 write_queue = asyncio.Queue(maxsize=3000)
 
 #Connect the Firebase database
-cred = credentials.Certificate("service-account-file.json")
+firebase_json = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+cred = credentials.Certificate(firebase_json)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 

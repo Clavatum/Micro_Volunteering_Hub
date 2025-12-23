@@ -19,5 +19,6 @@ class Event(BaseModel):
 class User(BaseModel):
     id: str
     photo_url: str
+    photo_url_custom: str
     user_mail: str
     user_name: str

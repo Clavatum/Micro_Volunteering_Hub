@@ -44,6 +44,7 @@ class EventDetailsScreen extends ConsumerWidget {
           .addJoinRequest(
             JoinRequest.fromJson(data),
           );
+      showGlobalSnackBar("requested");
     }
 
     return Scaffold(
@@ -82,7 +83,12 @@ class EventDetailsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(event.title, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
+              Text(
+                event.title, 
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
+              
               const SizedBox(height: 12),
 
               Row(
@@ -104,11 +110,24 @@ class EventDetailsScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.person, size: 18),
                   const SizedBox(width: 6),
-                  Text(event.hostName, style: GoogleFonts.poppins()),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Text(
+                      event.hostName, 
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins()
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  const Icon(Icons.group, size: 18),
-                  const SizedBox(width: 6),
-                  Text(event.capacity.toString(), style: GoogleFonts.poppins()),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.group, size: 18),
+                      const SizedBox(width: 6),
+                      Text(event.capacity.toString(), style: GoogleFonts.poppins()),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -127,13 +146,12 @@ class EventDetailsScreen extends ConsumerWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              Text(event.desc),
+              Text(event.desc, style: GoogleFonts.poppins(fontSize: 16)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: canJoin
                     ? () {
                         _requestJoin();
-                        showGlobalSnackBar("requested");
                       }
                     : null,
                 child: Text(

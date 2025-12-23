@@ -162,7 +162,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 icon: const Icon(Icons.help),
                 label: const Text('Get Help'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -300,8 +300,20 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     fontSize: 15,
                   ),
                 ),
-                if (_closeEvents != null && _closeEvents!.isNotEmpty)
-                  EventsPreview(events: _closeEvents!)
+                if(_events != null && _events!.isNotEmpty && _userData!["user_position"] == null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  alignment: Alignment.topLeft,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text("Getting your location. Please wait..."),
+                      LinearProgressIndicator(backgroundColor: Colors.black, color: primary,),
+                    ],
+                  ),
+                )
+                else if (_closeEvents != null && _closeEvents!.isNotEmpty)
+                  EventsPreview(events: _closeEvents!.where((element) => element.hostName != _userData!["user_name"]).toList())
                 else
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -323,7 +335,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateModal,
         shape: const CircleBorder(),
-        backgroundColor: Colors.green,
+        backgroundColor: primary,
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

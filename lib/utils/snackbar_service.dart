@@ -5,14 +5,16 @@ final GlobalKey<ScaffoldMessengerState> snackbarKey =
     GlobalKey<ScaffoldMessengerState>();
 
 void showGlobalSnackBar(String message) {
-  snackbarKey.currentState?.clearSnackBars();
-  snackbarKey.currentState?.showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+  WidgetsBinding.instance.addPostFrameCallback((_){
+    snackbarKey.currentState?.clearSnackBars();
+    snackbarKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: Color(0xFF00A86B),
       ),
-      backgroundColor: Color(0xFF00A86B),
-    ),
-  );
+    );
+  });
 }

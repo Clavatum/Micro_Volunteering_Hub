@@ -44,6 +44,10 @@ async def writeWorker():
         finally:
             write_queue.task_done()
 
+@app.get("/health")
+def health():
+    return {"ok": True}
+
 @app.get("/metrics")
 def metrics():
     return {
@@ -129,6 +133,20 @@ def removeEventAll(secret: str = Query(...)):
         doc.delete()
     print("Removed all events successfully.")
     return {"ok": True}
+
+@app.get("/user")
+async def getUser(id: str = Query(...)):
+    try:
+        doc_ref = db.collection("user_info").document(id)
+        doc = await run_in_threadpool(doc_ref.get)
+        if not doc.exists:
+            return {"ok": True, "user": None}
+        user_data = doc.to_dict()
+        user_data["id"] = doc.id
+        return {"ok": True, "user": user_data}
+    except Exception as e:
+        print(e)
+        return {"ok": False, "msg": str(e)}
 
 @app.post("/user/create")
 async def createUser(user: User):

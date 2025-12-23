@@ -22,7 +22,7 @@ class EventsPreview extends StatelessWidget {
               ),
             )
           : ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+              padding: const EdgeInsets.all(16),
               itemCount: events.length,
               itemBuilder: (context, index) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -75,12 +75,14 @@ class EventsPreview extends StatelessWidget {
                               horizontal: 8,
                             ),
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisSize: MainAxisSize.max,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  events[index].title.isEmpty ? "API error" : events[index].title,
+                                  events[index].title.isEmpty ? "Unnamed Event" : events[index].title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -88,11 +90,11 @@ class EventsPreview extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.person, size: 16),
                                     const SizedBox(width: 6),
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width / 2.5,
+                                    Expanded(
                                       child: Text(
                                         events[index].hostName,
                                         maxLines: 1,

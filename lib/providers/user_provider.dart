@@ -10,16 +10,23 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
   }
 
   void setUser(Map<String, dynamic> userData) {
+    print(userData);
     state = {...userData};
   }
 
   void updateUserProfile(String url) {
     state = {
       ...state,
-      'photo_url': url,
+      'photo_url_custom': url,
     };
   }
 
+  void updateUserAvatarState(bool isCustom){
+    state = {
+      ...state,
+      "photo_iscustom": isCustom,
+    };
+  }
   void setUserEvents(List<Event> usersEvents) {
     state = {...state, 'users_events': usersEvents};
   }

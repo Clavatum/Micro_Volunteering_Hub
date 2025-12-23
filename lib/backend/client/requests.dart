@@ -5,12 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/models/event.dart';
 
 //This URL is a local ip for testing purposes.
-String localServerURL = "https://micro-volunteering-hub-backend.onrender.com";
+String localServerURL = "http://192.168.97.16:8000";
 
 String publicServerURL = "https://micro-volunteering-hub-backend.onrender.com";
 String usedServerURL = publicServerURL;
-
-class FetchEventsResult {
+class FetchEventsResult{
   final List<Event> events;
   final String? cursor;
 

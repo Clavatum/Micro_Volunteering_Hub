@@ -84,48 +84,62 @@ class EventDetailsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                event.title, 
+                event.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
-              
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
               const SizedBox(height: 12),
 
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    _distance.toString(),
-                    style: GoogleFonts.poppins(),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.calendar_today, size: 18),
-                  const SizedBox(width: 6),
-                  Text(HelperFunctions.formatter.format(event.time), style: GoogleFonts.poppins()),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 18),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: Text(
-                      event.hostName, 
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins()
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on, size: 18),
+                      const SizedBox(width: 6),
+                      Text(_distance.toString(), style: GoogleFonts.poppins()),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        HelperFunctions.formatter.format(event.time),
+                        style: GoogleFonts.poppins(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          event.hostName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
                       const Icon(Icons.group, size: 18),
                       const SizedBox(width: 6),
-                      Text(event.capacity.toString(), style: GoogleFonts.poppins()),
+                      Text(
+                        event.capacity.toString(),
+                        style: GoogleFonts.poppins(),
+                      ),
                     ],
                   ),
                 ],
@@ -146,20 +160,36 @@ class EventDetailsScreen extends ConsumerWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              Text(event.desc, style: GoogleFonts.poppins(fontSize: 16)),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: canJoin
-                    ? () {
-                        _requestJoin();
-                      }
-                    : null,
-                child: Text(
-                  'Join',
-                  style: GoogleFonts.poppins(),
+              Text(
+                'Description',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(event.desc, style: GoogleFonts.poppins(fontSize: 16)),
+              const SizedBox(height: 80),
             ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton(
+            onPressed: canJoin
+                ? () {
+                    _requestJoin();
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text('Join', style: GoogleFonts.poppins(fontSize: 18)),
           ),
         ),
       ),

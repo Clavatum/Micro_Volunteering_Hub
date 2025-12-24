@@ -31,9 +31,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty || !canChat) return;
 
+    final user = FirebaseAuth.instance.currentUser!;
+
     await FirebaseFirestore.instance.collection('chats').doc(widget.event.eventId).collection('messages').add({
       'text': text,
-      'sender_id': userId,
+      'sender_id': user.uid,
+      'sender_name': user.displayName ?? 'User',
       'created_at': FieldValue.serverTimestamp(),
     });
 
@@ -89,6 +92,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     }
 
                     final isMe = msg['sender_id'] == userId;
+                    final senderName = msg['sender_name'] ?? 'User';
 
                     return Align(
                       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -99,11 +103,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           color: isMe ? primary : Colors.grey.shade300,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Text(
-                          msg['text'],
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            if (!isMe)
+                              Text(
+                                senderName,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            if (!isMe) const SizedBox(height: 4),
+                            Text(
+                              msg['text'],
+                              style: TextStyle(
+                                color: isMe ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );

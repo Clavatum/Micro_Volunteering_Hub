@@ -63,7 +63,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
 
   @override
   void dispose() {
-     _dummyFocusNode.dispose();
+    _dummyFocusNode.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -92,12 +92,9 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   }
 
   Future<bool> uploadFirestore() async {
-    if (_locationknowledge == null || _locationknowledge!['position'] == null)
-      return false;
+    if (_locationknowledge == null || _locationknowledge!['position'] == null) return false;
 
-    List<String> selectedCategoryNames = _selectedCategories
-        .map((e) => e.name)
-        .toList();
+    List<String> selectedCategoryNames = _selectedCategories.map((e) => e.name).toList();
 
     LatLng pos = _locationknowledge!['position'];
     var id = FirebaseAuth.instance.currentUser!.uid;
@@ -130,9 +127,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'description': desc,
       'people_needed': _peopleNeeded,
       'duration': _durationMinutes, //Stored in minutes
-      'starting_date': _startDateTime != null
-          ? _startDateTime!.toUtc().toString()
-          : "null",
+      'starting_date': _startDateTime != null ? _startDateTime!.toUtc().toString() : "null",
     };
     var apiResponse = await createEventAPI(eventData);
     if (apiResponse["ok"]) {
@@ -274,9 +269,9 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         color: Colors.black87,
                       ),
                     ),
-              
+
                     const SizedBox(height: 8),
-              
+
                     TextFormField(
                       controller: _titleController,
                       maxLength: 32,
@@ -292,14 +287,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         hintText: 'The title of event is...',
                         hintStyle: GoogleFonts.poppins(color: primary, fontSize: 16),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Please enter a title'
-                          : null,
-                      style: GoogleFonts.poppins(color: primary,fontSize: 16),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a title' : null,
+                      style: GoogleFonts.poppins(color: primary, fontSize: 16),
                     ),
-              
+
                     const SizedBox(height: 8),
-              
+
                     Text(
                       'Event Description',
                       style: GoogleFonts.poppins(
@@ -324,14 +317,12 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         hintText: 'Describe the event...',
                         hintStyle: GoogleFonts.poppins(color: primary, fontSize: 16),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Please enter a description'
-                          : null,
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a description' : null,
                       style: GoogleFonts.poppins(color: primary, fontSize: 16),
                     ),
-              
+
                     const SizedBox(height: 8),
-              
+
                     Text(
                       'Location',
                       style: GoogleFonts.poppins(
@@ -340,7 +331,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         color: Colors.black87,
                       ),
                     ),
-              
+
                     const SizedBox(height: 8),
                     Container(
                       height: 72,
@@ -373,26 +364,21 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                             Icon(Icons.location_pin, size: 28, color: primary),
                             Flexible(
                               child: Text(
-                                _locationknowledge == null ||
-                                        _locationknowledge!['position'] == null
+                                _locationknowledge == null || _locationknowledge!['position'] == null
                                     ? 'Tap to Select a Location'
                                     : '${_locationknowledge!['address']}',
-                                style:
-                                    GoogleFonts.poppins(
-                                      color: primary,
-                                    ).copyWith(
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16
-                                    ),
+                                style: GoogleFonts.poppins(
+                                  color: primary,
+                                ).copyWith(fontWeight: FontWeight.normal, fontSize: 16),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-              
+
                     const SizedBox(height: 16),
-                    
+
                     Text(
                       'Picture (Optional)',
                       style: GoogleFonts.poppins(
@@ -426,14 +412,14 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                 ),
                               ),
                         onTap: () {
-                          pickImage(); 
+                          pickImage();
                           FocusScope.of(context).requestFocus(_dummyFocusNode);
                         },
                       ),
                     ),
-              
+
                     const SizedBox(height: 16),
-              
+
                     Text(
                       'Category',
                       style: GoogleFonts.poppins(
@@ -495,29 +481,26 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                                   c.name,
                                                   style: GoogleFonts.poppins(fontSize: 16),
                                                 ),
-                                                onChanged: (v) =>
-                                                    setStateModal(() {
-                                                      if (v == true)
-                                                        temp.add(c);
-                                                      else
-                                                        temp.remove(c);
-                                                    }),
+                                                onChanged: (v) => setStateModal(() {
+                                                  if (v == true)
+                                                    temp.add(c);
+                                                  else
+                                                    temp.remove(c);
+                                                }),
                                               );
                                             }),
                                             const SizedBox(height: 8),
                                             Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
+                                              mainAxisAlignment: MainAxisAlignment.end,
                                               children: [
                                                 TextButton(
                                                   style: TextButton.styleFrom(
                                                     side: BorderSide(),
                                                     foregroundColor: primary,
                                                   ),
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx).pop(
-                                                        _selectedCategories,
-                                                      ),
+                                                  onPressed: () => Navigator.of(ctx).pop(
+                                                    _selectedCategories,
+                                                  ),
                                                   child: Text(
                                                     'Cancel',
                                                     style: GoogleFonts.poppins(
@@ -529,8 +512,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                                 const SizedBox(width: 8),
                                                 ElevatedButton(
                                                   style: ElevatedButton.styleFrom(
-                                                    backgroundColor: primary
-                                                        .withValues(alpha: .95),
+                                                    backgroundColor: primary.withValues(alpha: .95),
                                                     foregroundColor: Colors.white,
                                                   ),
                                                   onPressed: () => Navigator.of(
@@ -561,10 +543,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                           },
                           child: Text(
                             'Select Categories',
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16
-                            ),
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -573,7 +552,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                             _selectedCategories.isEmpty
                                 ? 'No Categories Selected'
                                 : '${_selectedCategories.length} Selected',
-                            style: GoogleFonts.poppins(color: primary,fontSize: 16),
+                            style: GoogleFonts.poppins(color: primary, fontSize: 16),
                           ),
                         ),
                       ],
@@ -583,15 +562,17 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       Wrap(
                         spacing: 8,
                         children: _selectedCategories
-                            .map((c) => Chip(
-                              label: Text(c.name, style: GoogleFonts.poppins(color:primary)), 
-                              backgroundColor: Colors.white38,
-                              side: BorderSide(),
-                              ))
+                            .map(
+                              (c) => Chip(
+                                label: Text(c.name, style: GoogleFonts.poppins(color: primary)),
+                                backgroundColor: Colors.white38,
+                                side: BorderSide(),
+                              ),
+                            )
                             .toList(),
                       ),
                     const SizedBox(height: 16),
-              
+
                     Text(
                       'Start of Event (Date & Time)',
                       style: GoogleFonts.poppins(
@@ -609,7 +590,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                               backgroundColor: primary,
                               foregroundColor: Colors.white,
                             ),
-                            onPressed: (){
+                            onPressed: () {
                               _pickStartDateTime(context);
                               FocusScope.of(context).requestFocus(_dummyFocusNode);
                             },
@@ -626,7 +607,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-              
+
                     Text(
                       'Duration',
                       style: GoogleFonts.poppins(
@@ -665,22 +646,19 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                             .toList(),
                         onChanged: (v) => setState(() {
                           _selectedDuration = v;
-                          if (v != null){
-                            try{
+                          if (v != null) {
+                            try {
                               _durationMinutes = durations[_durationOptions.indexOf(v)];
-                            }
-                            catch(e){
+                            } catch (e) {
                               _durationMinutes = 0;
                             }
                           }
                         }),
-                        validator: (v) => (v == null || v.isEmpty)
-                            ? 'Please Select Duration'
-                            : null,
+                        validator: (v) => (v == null || v.isEmpty) ? 'Please Select Duration' : null,
                       ),
                     ),
                     const SizedBox(height: 16),
-              
+
                     Text(
                       'People Needed',
                       style: GoogleFonts.poppins(
@@ -719,7 +697,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         onChanged: (v) => setState(() => _peopleNeeded = v ?? 1),
                       ),
                     ),
-              
+
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -736,30 +714,29 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         onPressed: _isLoading
                             ? null
                             : () async {
-                                if (!(_formKey.currentState?.validate() ?? false))
-                                  return;
-              
+                                if (!(_formKey.currentState?.validate() ?? false)) return;
+
                                 if (_locationknowledge == null) {
                                   showGlobalSnackBar("Please pick a location");
                                   return;
                                 }
-              
+
                                 if (_startDateTime == null) {
                                   showGlobalSnackBar(
                                     "Please pick a start date/time",
                                   );
                                   return;
                                 }
-              
+
                                 if (_durationMinutes == 0) {
                                   showGlobalSnackBar("Please pick a duration");
                                   return;
                                 }
-              
+
                                 setState(() {
                                   _isLoading = true;
                                 });
-              
+
                                 bool isUploaded = await uploadFirestore();
                                 setState(() {
                                   _isLoading = false;
@@ -769,9 +746,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                                   Navigator.pop(context);
                                 }
                               },
-                        child: _isLoading
-                            ? CircularProgressIndicator()
-                            : Text('Submit'),
+                        child: _isLoading ? CircularProgressIndicator() : Text('Submit'),
                       ),
                     ),
                   ],

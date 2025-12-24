@@ -117,6 +117,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
     );
 
     Map<String, dynamic> eventData = {
+      'attendant_ids': [],
       'host_name': userName,
       'user_id': id,
       'selected_lat': pos.latitude,

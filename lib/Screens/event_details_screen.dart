@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/models/join_request.dart';
+import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 
@@ -18,6 +23,29 @@ class EventDetailsScreen extends ConsumerWidget {
     String _distance = '${event.distanceToUser}m';
     Map<String, dynamic> _userData = ref.watch(userProvider);
     bool canJoin = _userData['id'] != event.userId;
+
+    Future<void> _requestJoin() async {
+      final firestore = FirebaseFirestore.instance;
+      final user = FirebaseAuth.instance.currentUser;
+
+      final requestId = "${event.eventId}_${user!.uid}";
+      var data = {
+        'requester_name': user.displayName,
+        'event_id': event.eventId,
+        'requester_id': user.uid,
+        'host_id': event.userId,
+        'status': 'pending',
+        'requested_at': FieldValue.serverTimestamp(),
+      };
+
+      await firestore.collection('join_requests').doc(requestId).set(data);
+      ref
+          .read(joinRequestProvider.notifier)
+          .addJoinRequest(
+            JoinRequest.fromJson(data),
+          );
+      showGlobalSnackBar("requested");
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -35,22 +63,32 @@ class EventDetailsScreen extends ConsumerWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  event.imageUrl, 
-                  width: double.infinity, 
-                  height: 200, 
+                  event.imageUrl,
+                  width: double.infinity,
+                  height: 200,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       width: double.infinity,
                       height: 200,
                       color: Colors.green,
-                      child: Center(child: Icon(Icons.event, size: 64,),),
+                      child: Center(
+                        child: Icon(
+                          Icons.event,
+                          size: 64,
+                        ),
+                      ),
                     );
                   },
-                )
+                ),
               ),
               const SizedBox(height: 12),
-              Text(event.title, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
+              Text(
+                event.title, 
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700)),
+              
               const SizedBox(height: 12),
 
               Row(
@@ -72,11 +110,24 @@ class EventDetailsScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.person, size: 18),
                   const SizedBox(width: 6),
-                  Text(event.hostName, style: GoogleFonts.poppins()),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: Text(
+                      event.hostName, 
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins()
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  const Icon(Icons.group, size: 18),
-                  const SizedBox(width: 6),
-                  Text(event.capacity.toString(), style: GoogleFonts.poppins()),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.group, size: 18),
+                      const SizedBox(width: 6),
+                      Text(event.capacity.toString(), style: GoogleFonts.poppins()),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -95,12 +146,12 @@ class EventDetailsScreen extends ConsumerWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              Text(event.desc),
+              Text(event.desc, style: GoogleFonts.poppins(fontSize: 16)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: canJoin
                     ? () {
-                        showGlobalSnackBar("Join action (placeholder)");
+                        _requestJoin();
                       }
                     : null,
                 child: Text(

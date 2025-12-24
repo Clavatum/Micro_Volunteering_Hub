@@ -5,15 +5,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/notification_screen.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/models/join_request.dart';
 import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
+import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
 import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 import 'package:micro_volunteering_hub/widgets/last_event_preview.dart';
-import 'package:micro_volunteering_hub/utils/position_service.dart';
 import 'profile_screen.dart';
 import 'get_help_screen.dart';
 import 'help_others_screen.dart';
@@ -47,13 +49,13 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   Future<void> _init() async {
-    //await _getEventsFromFirebase();
     _userData = ref.read(userProvider);
     await fetchEvents();
     _setDistances();
     _setCloseEvents();
     startPositionTimer();
     startEventPolling();
+    await _getRequests();
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -160,7 +162,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 icon: const Icon(Icons.help),
                 label: const Text('Get Help'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -200,6 +202,21 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     super.dispose();
   }
 
+  List<JoinRequest>? requests;
+
+  Future<void> _getRequests() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('join_requests')
+        .where('host_id', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    requests = snapshot.docs.map((d) => JoinRequest.fromJson(d.data())).toList();
+    if (requests == null) return;
+    ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -211,6 +228,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? "Guest";
+    var _requestsB = ref.watch(joinRequestProvider);
+    var pRequests = _requestsB.where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid).toList();
+
+    Color activeColor = pRequests.isEmpty ? const Color.fromARGB(255, 50, 50, 50) : Colors.red;
+
     return Scaffold(
       extendBody: true,
       backgroundColor: background,
@@ -221,13 +243,31 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hello, $name!',
-                  overflow: TextOverflow.clip,
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Hello, $name!',
+                      overflow: TextOverflow.clip,
+                      style: GoogleFonts.poppins(
+                        fontSize: 25,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.notifications,
+                        color: activeColor,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => NotificationScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -260,8 +300,20 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     fontSize: 15,
                   ),
                 ),
-                if (_closeEvents != null && _closeEvents!.isNotEmpty)
-                  EventsPreview(events: _closeEvents!)
+                if(_events != null && _events!.isNotEmpty && _userData!["user_position"] == null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  alignment: Alignment.topLeft,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text("Getting your location. Please wait..."),
+                      LinearProgressIndicator(backgroundColor: Colors.black, color: primary,),
+                    ],
+                  ),
+                )
+                else if (_closeEvents != null && _closeEvents!.isNotEmpty)
+                  EventsPreview(events: _closeEvents!.where((element) => element.hostName != _userData!["user_name"]).toList())
                 else
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -283,7 +335,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateModal,
         shape: const CircleBorder(),
-        backgroundColor: Colors.green,
+        backgroundColor: primary,
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

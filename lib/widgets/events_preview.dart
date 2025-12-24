@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/chat_room_screen.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 
 class EventsPreview extends StatelessWidget {
-  const EventsPreview({super.key, required this.events});
+  const EventsPreview({
+    super.key,
+    required this.events,
+  });
   final List<Event> events;
   @override
   Widget build(BuildContext context) {
@@ -18,7 +22,7 @@ class EventsPreview extends StatelessWidget {
               ),
             )
           : ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+              padding: const EdgeInsets.all(16),
               itemCount: events.length,
               itemBuilder: (context, index) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -71,12 +75,14 @@ class EventsPreview extends StatelessWidget {
                               horizontal: 8,
                             ),
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisSize: MainAxisSize.max,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  events[index].title,
+                                  events[index].title.isEmpty ? "Unnamed Event" : events[index].title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -84,11 +90,11 @@ class EventsPreview extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.person, size: 16),
                                     const SizedBox(width: 6),
-                                    SizedBox(
-                                      width: MediaQuery.of(context).size.width / 2.5,
+                                    Expanded(
                                       child: Text(
                                         events[index].hostName,
                                         maxLines: 1,

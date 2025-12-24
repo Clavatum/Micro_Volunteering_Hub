@@ -6,13 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/providers/auth_controller.dart';
+import 'package:micro_volunteering_hub/providers/network_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/screens/event_details_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
+import 'package:micro_volunteering_hub/utils/storage.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -30,6 +35,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _imagePicker = ImagePicker();
   File? _image;
   String? url;
+  late Map<String, dynamic> userData;
 
   Future<void> _pickImageFromGallery() async {
     var image = await _imagePicker.pickImage(source: ImageSource.gallery);
@@ -51,21 +57,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> handleImage() async {
     await uploadToCloudinary();
-
-    await FirebaseFirestore.instance
-        .collection('user_info')
-        .doc(
-          FirebaseAuth.instance.currentUser!.uid,
-        )
-        .set(
-          {
-            'photo_url': url,
-          },
-          SetOptions(merge: true),
-        );
-
-    if (url != null) {
+    if(url != null){
+      String? customPath = await downloadAndSaveImage(url!, "user_${userData["id"]}_custom.png");
+      Map<String, dynamic> userData_ = {
+        "id": userData["id"],
+        "user_name": userData["user_name"],
+        "user_mail": userData["user_mail"],
+        "photo_url": userData["photo_url"],
+        "photo_url_custom": url,
+        "photo_path": userData["photo_path"] ?? "",
+        "photo_path_custom": customPath ?? "",
+        "photo_iscustom": true,
+        "updated_at": DateTime.now().millisecondsSinceEpoch,
+      };
+      ref.read(userProvider.notifier).updateUserAvatarState(true);
+      await UserLocalDb.saveUserAndActivate(userData_);
       ref.read(userProvider.notifier).updateUserProfile(url!);
+      await createAndStoreUserAPI(userData_);
+      showGlobalSnackBar("Successfully changed profile image");
     }
   }
 
@@ -96,6 +105,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
+  void removeAvatar() async{
+    ref.read(userProvider.notifier).updateUserAvatarState(false);
+    Map<String, dynamic> userData_ = {
+      "id": userData["id"],
+      "user_name": userData["user_name"],
+      "user_mail": userData["user_mail"],
+      "photo_url": userData["photo_url"],
+      "photo_url_custom": userData["photo_url_custom"],
+      "photo_path": userData["photo_path"] ?? "",
+      "photo_path_custom": userData["photo_path_custom"] ?? "",
+      "photo_iscustom": false,
+      "updated_at": DateTime.now().millisecondsSinceEpoch,
+    };
+    await UserLocalDb.saveUserAndActivate(userData_);
+    showGlobalSnackBar("Removed custom profile image");
+  }
 
   Future<void> uploadToCloudinary() async {
     if (_image == null) return;
@@ -119,34 +144,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   int _selectedTab = 0;
 
-  Widget userAvatar(String? localPath) {
-    if (localPath == null || localPath.isEmpty) {
-      return const CircleAvatar(
+  Widget _removeAvatarButton() {
+    return GestureDetector(
+      onTap: removeAvatar,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.redAccent,
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.close,
+          size: 16,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget userAvatar(String? photoUrl, String? localPath, bool isOnline) {
+    if(isOnline && photoUrl != null && photoUrl.isNotEmpty){
+      return CircleAvatar(
         radius: 52,
         backgroundColor: primary,
         child: ClipOval(
-          child: Icon(Icons.person, size: 64, color: Colors.white),
-        ),
+          child: Image.network(
+            photoUrl,
+            width: 104,
+            height: 104,
+            fit: BoxFit.cover,
+          ),
+        )
       );
-    } else {
+    }
+    else if(localPath != null && localPath.isNotEmpty && File(localPath).existsSync()){
       return CircleAvatar(
         radius: 52,
         backgroundColor: primary,
         backgroundImage: FileImage(File(localPath)),
       );
     }
+
+    //Fallback solution
+    return const CircleAvatar(
+      radius: 52,
+      backgroundColor: primary,
+      child: ClipOval(
+        child: Icon(Icons.person, size: 64, color: Colors.white),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    var userData = ref.watch(userProvider);
-
-    print(userData);
+    var _userData = ref.watch(userProvider);
+    userData = _userData;
+    final isOnline = ref.watch(backendHealthProvider);
 
     List<Event> userEvents = userData['users_events'] ?? [];
     final String displayName = userData['user_name'] ?? 'Anonymous';
     final String role = 'Community Helper';
-    String? photoUrl = userData['photo_url'];
+    bool isAvatarCustom = (userData["photo_iscustom"] ?? false);
+    String? photoUrl = (isAvatarCustom) ? userData["photo_url_custom"] : userData['photo_url'];
+    String? photoPath = (isAvatarCustom) ? userData["photo_path_custom"] : userData['photo_path'];
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -187,7 +254,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: pickImage,
-                    child: userAvatar(userData["photo_url"]),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        userAvatar(photoUrl, photoPath, isOnline),
+                        if (isAvatarCustom)
+                          Positioned(
+                            bottom: -2,
+                            right: -2,
+                            child: _removeAvatarButton(),
+                          )
+                      ]
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -232,34 +310,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Events Created',
-                          style: GoogleFonts.poppins(color: primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          //placeholder
-                          '0',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Events Attended',
+                          'Events Active',
                           style: GoogleFonts.poppins(color: primary),
                         ),
                       ],
@@ -274,12 +325,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _selectedTab == 0
-                          ? primary
-                          : Colors.white,
-                      foregroundColor: _selectedTab == 0
-                          ? Colors.white
-                          : primary,
+                      backgroundColor: _selectedTab == 0 ? primary : Colors.white,
+                      foregroundColor: _selectedTab == 0 ? Colors.white : primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

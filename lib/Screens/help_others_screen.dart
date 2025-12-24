@@ -29,7 +29,10 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
 
   void _centerMapToUser() {
     if (_currentPosition == null) return;
-    _mapController.move(LatLng(_currentPosition!.latitude, _currentPosition!.longitude), 13.0);
+    _mapController.move(
+      LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      13.0,
+    );
   }
 
   void _showEventDialog(Event event) {
@@ -139,14 +142,18 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
 
     _userData = watchedUser;
     try {
-      _currentPosition = _userData == null ? null : _userData!["user_position"] as Position?;
+      _currentPosition = _userData == null
+          ? null
+          : _userData!["user_position"] as Position?;
     } catch (_) {
       _currentPosition = null;
     }
 
     final filteredEvents = selectedTags.isEmpty
         ? events
-        : events.where((e) => e.tags.any((t) => selectedTags.contains(t.name))).toList();
+        : events
+              .where((e) => e.tags.any((t) => selectedTags.contains(t.name)))
+              .toList();
     const Color primary = Color(0xFF00A86B);
 
     return Scaffold(
@@ -155,7 +162,10 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
         elevation: 2,
         title: Text(
           'Help Others',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -172,7 +182,10 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
               options: MapOptions(
                 onMapReady: _centerMapToUser,
                 initialCenter: _currentPosition != null
-                    ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                    ? LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      )
                     : const LatLng(41.0082, 28.9784),
                 initialZoom: 14.0,
                 minZoom: 5.0,
@@ -180,7 +193,8 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                  urlTemplate:
+                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                   subdomains: const ['a', 'b', 'c'],
                   maxZoom: 19,
                 ),
@@ -188,16 +202,28 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                   markers: [
                     if (_currentPosition != null)
                       Marker(
-                        point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                        point: LatLng(
+                          _currentPosition!.latitude,
+                          _currentPosition!.longitude,
+                        ),
                         width: 44,
                         height: 44,
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.blue,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.blue.withAlpha(100), blurRadius: 8)],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withAlpha(100),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 24),
+                          child: const Icon(
+                            Icons.person_pin_circle,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                       ),
                     ...filteredEvents.map(
@@ -213,9 +239,18 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                             decoration: BoxDecoration(
                               color: Colors.red,
                               shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.red.withAlpha(100), blurRadius: 8)],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withAlpha(100),
+                                  blurRadius: 8,
+                                ),
+                              ],
                             ),
-                            child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),
@@ -237,7 +272,7 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'No location, centerred to Istanbul',
+                      'No location, centered to Istanbul',
                       style: GoogleFonts.poppins(color: Colors.black87),
                     ),
                   ),
@@ -272,7 +307,7 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                     backgroundColor: primary,
                     mini: true,
                     onPressed: _centerMapToUser,
-                    tooltip: 'Konumuma Odaklan',
+                    tooltip: 'Center to my location',
                     child: const Icon(Icons.my_location, color: Colors.white),
                   ),
                 ],
@@ -281,31 +316,42 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
             Positioned(
               top: 5,
               left: 0,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              right: 0,
+              child: Container(
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: Tag.values.map((tag) {
-                    final isSelected = selectedTags.contains(tag.name);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(
-                        label: Text(tag.name, style: TextStyle(color: isSelected ? Colors.white : Colors.black87)),
-                        selected: isSelected,
-                        selectedColor: primary,
-                        backgroundColor: Colors.grey[200],
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              selectedTags.add(tag.name);
-                            } else {
-                              selectedTags.remove(tag.name);
-                            }
-                          });
-                        },
-                      ),
-                    );
-                  }).toList(),
+                alignment: Alignment.centerLeft,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: Tag.values.map((tag) {
+                      final isSelected = selectedTags.contains(tag.name);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ChoiceChip(
+                          label: Text(
+                            tag.name,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: primary,
+                          backgroundColor: Colors.grey[200],
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                selectedTags.add(tag.name);
+                              } else {
+                                selectedTags.remove(tag.name);
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),

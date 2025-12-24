@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/user_provider.dart';
 
 class EventDialog extends ConsumerWidget {
   final Event event;
@@ -57,6 +58,9 @@ class EventDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    var _userData = ref.watch(userProvider);
+    bool canJoin = _userData['id'] != event.userId;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -65,17 +69,22 @@ class EventDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            (event.imageUrl.isNotEmpty) ?
-              Container(
-                height: 170,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(event.imageUrl),
-                    fit: BoxFit.cover,
+            (event.imageUrl.isNotEmpty)
+                ? Container(
+                    height: 170,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(event.imageUrl),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  )
+                : Container(
+                    width: double.infinity,
+                    height: 170,
+                    color: Colors.green,
                   ),
-                ),
-              ): Container(width: double.infinity, height: 170, color: Colors.green,),
 
             ClipRRect(
               borderRadius: const BorderRadius.only(
@@ -109,11 +118,7 @@ class EventDialog extends ConsumerWidget {
                       }
 
                       final data = snapshot.data!;
-                      return _buildContent(
-                        context,
-                        data.address,
-                        data.creator,
-                      );
+                      return _buildContent(context, data.address, data.creator, canJoin);
                     },
                   ),
                 ),
@@ -125,22 +130,16 @@ class EventDialog extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(
-    BuildContext context,
-    String? address,
-    Map<String, dynamic>? creator,
-  ) {
+  Widget _buildContent(BuildContext context, String? address, Map<String, dynamic>? creator, bool canJoin) {
     final maxHeight = MediaQuery.of(context).size.height * 0.5;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: maxHeight
-          ),
+          constraints: BoxConstraints(maxHeight: maxHeight),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom:12),
+            padding: const EdgeInsets.only(bottom: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +255,7 @@ class EventDialog extends ConsumerWidget {
                   ),
                 ),
               ],
-            )
+            ),
           ),
         ),
 
@@ -266,7 +265,7 @@ class EventDialog extends ConsumerWidget {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: onJoin ?? () => Navigator.of(context).pop(),
+                onPressed: canJoin ? onJoin ?? () => Navigator.of(context).pop() : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00A86B).withAlpha(220),
                   shape: RoundedRectangleBorder(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/widgets/chat_evet_card.dart';
-import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});

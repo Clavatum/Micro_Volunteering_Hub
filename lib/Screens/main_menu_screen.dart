@@ -73,7 +73,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
           ref
               .read(userProvider.notifier)
               .setUserEvents(
-                fetchedEvents.events.where((e) => e.userId == _userData!['id']).toList(),
+                fetchedEvents.events
+                    .where((e) => e.userId == _userData!['id'])
+                    .toList(),
               );
         }
       }
@@ -119,7 +121,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   void _setDistances() {
-    if (_events == null || _userData == null || _userData!["user_position"] == null) return;
+    if (_events == null ||
+        _userData == null ||
+        _userData!["user_position"] == null)
+      return;
     for (Event e in _events!) {
       e.setIsClose(
         _userData!['user_position'].latitude ?? -1000000000,
@@ -211,7 +216,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         .where('status', isEqualTo: 'pending')
         .get();
 
-    requests = snapshot.docs.map((d) => JoinRequest.fromJson(d.data())).toList();
+    requests = snapshot.docs
+        .map((d) => JoinRequest.fromJson(d.data()))
+        .toList();
     if (requests == null) return;
     ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
     setState(() {});
@@ -229,9 +236,13 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? "Guest";
     var _requestsB = ref.watch(joinRequestProvider);
-    var pRequests = _requestsB.where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid).toList();
+    var pRequests = _requestsB
+        .where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid)
+        .toList();
 
-    Color activeColor = pRequests.isEmpty ? const Color.fromARGB(255, 50, 50, 50) : Colors.red;
+    Color activeColor = pRequests.isEmpty
+        ? const Color.fromARGB(255, 50, 50, 50)
+        : Colors.red;
 
     return Scaffold(
       extendBody: true,
@@ -246,12 +257,16 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Hello, $name!',
-                      overflow: TextOverflow.clip,
-                      style: GoogleFonts.poppins(
-                        fontSize: 25,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Text(
+                        'Hello, $name!',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: GoogleFonts.poppins(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -300,20 +315,32 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     fontSize: 15,
                   ),
                 ),
-                if(_events != null && _events!.isNotEmpty && _userData!["user_position"] == null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  alignment: Alignment.topLeft,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text("Getting your location. Please wait..."),
-                      LinearProgressIndicator(backgroundColor: Colors.black, color: primary,),
-                    ],
-                  ),
-                )
+                if (_events != null &&
+                    _events!.isNotEmpty &&
+                    _userData!["user_position"] == null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    alignment: Alignment.topLeft,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text("Getting your location. Please wait..."),
+                        LinearProgressIndicator(
+                          backgroundColor: Colors.black,
+                          color: primary,
+                        ),
+                      ],
+                    ),
+                  )
                 else if (_closeEvents != null && _closeEvents!.isNotEmpty)
-                  EventsPreview(events: _closeEvents!.where((element) => element.hostName != _userData!["user_name"]).toList())
+                  EventsPreview(
+                    events: _closeEvents!
+                        .where(
+                          (element) =>
+                              element.hostName != _userData!["user_name"],
+                        )
+                        .toList(),
+                  )
                 else
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -364,7 +391,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                   child: IconButton(
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileScreen(),
+                        ),
                       );
                     },
                     icon: Icon(

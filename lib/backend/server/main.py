@@ -137,8 +137,12 @@ async def joinEvent(eventID: str, body: JoinRequest):
             user_snapshot = user_doc.get(transaction=transaction)
 
             if user_snapshot.exists:
-                return False
+                return {"ok": False, "msg": "You already joined this event."}
             
+            event_snapshot = event_doc.get(transaction=transaction)
+            event_data = event_snapshot.to_dict()
+            if event_data["participant_count"] >= event_data["people_needed"]:
+                return {"ok": False, "msg": "Event is full."}
             transaction.set(user_doc, {
                 "joined_at": firestore.firestore.SERVER_TIMESTAMP
             })
@@ -147,14 +151,12 @@ async def joinEvent(eventID: str, body: JoinRequest):
                 "participant_count": firestore.firestore.Increment(1)
             })
 
-            return True
+            return {"ok": True}
         return run(transaction)
-    created = await run_in_threadpool(joinEventTransaction)
-    if not created:
-        return {"ok": False, "msg": "You already joined this event."}
-    return {"ok": True}
+    result = await run_in_threadpool(joinEventTransaction)
+    return result
 
-@app.post("/event/{eventID}/join")
+@app.post("/event/{eventID}/leave")
 async def leaveEvent(eventID: str, user_id: str):
     def leaveEventTransaction():
         transaction = db.transaction()

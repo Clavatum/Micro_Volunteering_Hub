@@ -1,6 +1,7 @@
 import json
 import os
 import asyncio
+from fastapi.staticfiles import StaticFiles
 import firebase_admin
 import logging
 from firebase_admin import credentials, firestore
@@ -25,6 +26,7 @@ app = FastAPI(title = "QuickHelp")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 @app.on_event("startup")
 async def startWorkers():

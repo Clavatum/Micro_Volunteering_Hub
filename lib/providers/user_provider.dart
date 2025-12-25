@@ -56,7 +56,7 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
   }
 
   void attendEvent(Event e) {
-    List<Event> events = state['user_attended_events'];
+    List<Event> events = state['user_attended_events'] ?? [];
     events.add(e);
     state = {...state, 'user_attended_events': events};
   }

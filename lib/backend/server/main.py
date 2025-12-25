@@ -85,6 +85,7 @@ async def createEvent(event: Event):
         
         data = {
             **event.model_dump(),
+            "participant_count": 0,
             "createdAt": serverTime,
             "expireAt": expire_at
         }
@@ -123,6 +124,63 @@ async def getEvents(after: Optional[str] = Query(None, description="Last documen
         print(e)
         return {"ok": False, "msg": str(e)}
 
+@app.post("/event/{eventID}/join")
+async def joinEvent(eventID: str, body: JoinRequest):
+    def joinEventTransaction():
+        transaction = db.transaction()
+
+        @firestore.transactional
+        def run(transaction):
+            user_doc = db.collection("participants").document(eventID).collection("users").document(body.user_id)
+            event_doc = db.collection("event_info").document(eventID)
+
+            user_snapshot = user_doc.get(transaction=transaction)
+
+            if user_snapshot.exists:
+                return False
+            
+            transaction.set(user_doc, {
+                "joined_at": firestore.firestore.SERVER_TIMESTAMP
+            })
+
+            transaction.update(event_doc, {
+                "participant_count": firestore.firestore.Increment(1)
+            })
+
+            return True
+        return run(transaction)
+    created = await run_in_threadpool(joinEventTransaction)
+    if not created:
+        return {"ok": False, "msg": "You already joined this event."}
+    return {"ok": True}
+
+@app.post("/event/{eventID}/join")
+async def leaveEvent(eventID: str, user_id: str):
+    def leaveEventTransaction():
+        transaction = db.transaction()
+
+        @firestore.transactional
+        def run(transaction):
+            user_doc = db.collection("participants").document(eventID).collection("users").document(user_id)
+            event_doc = db.collection("event_info").document(eventID)
+
+            user_snapshot = user_doc.get(transaction=transaction)
+
+            if not user_snapshot.exists:
+                return False
+            
+            transaction.delete(user_doc)
+
+            transaction.update(event_doc, {
+                "participant_count": firestore.firestore.Increment(-1)
+            })
+
+            return True
+        return run(transaction)
+    removed = await run_in_threadpool(leaveEventTransaction)
+    if not removed:
+        return {"ok": False, "msg": "You already did not join this event."}
+    return {"ok": True}
 @app.get("/event/delete/all")
 def removeEventAll(secret: str = Query(...)):
     if secret != os.environ.get("ADMIN_SECRET"):

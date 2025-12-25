@@ -10,6 +10,8 @@ class Event {
   final DateTime time;
   final String hostName;
   final int capacity;
+  final bool instantJoin;
+  final int participantCount;
   final String imageUrl;
   final List<Tag> tags;
   final LatLng coords;
@@ -25,13 +27,36 @@ class Event {
     required this.time,
     required this.hostName,
     required this.capacity,
+    required this.instantJoin,
+    required this.participantCount,
     required this.imageUrl,
     required this.tags,
     required this.coords,
     this.distanceToUser = -1,
     this.attendantIds = const [],
   }) : isClose = false;
-
+  Event copyWith({
+    List<String>? attendantIds,
+    int? participantCount,
+  }) {
+    return Event(
+      eventId: eventId,
+      userId: userId,
+      title: title,
+      desc: desc,
+      time: time,
+      hostName: hostName,
+      capacity: capacity,
+      instantJoin: instantJoin,
+      participantCount: participantCount ?? this.participantCount,
+      imageUrl: imageUrl,
+      tags: tags,
+      coords: coords,
+      distanceToUser: distanceToUser,
+      attendantIds: attendantIds ?? this.attendantIds,
+    );
+  }
+  
   void setIsClose(double lat, double lon) {
     int dist = HelperFunctions.getDistanceFromTwoPoints(
       lat1: lat,
@@ -47,6 +72,7 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     final DateTime parsedDate = DateTime.parse(json["starting_date"]).toLocal();
+    print(json);
     return Event(
       attendantIds: List<String>.from(json['attendant_ids'] ?? []),
       eventId: json["id"],
@@ -56,6 +82,8 @@ class Event {
       time: parsedDate,
       hostName: json['host_name'] ?? 'unknown',
       capacity: json['people_needed'],
+      instantJoin: json["instant_join"],
+      participantCount: json["participant_count"],
       imageUrl: json['user_image_url'],
       tags: _fromJsonToEvents(json['categories'] as List<dynamic>),
       coords: LatLng((json['selected_lat'] as num).toDouble(), (json['selected_lon'] as num).toDouble()),

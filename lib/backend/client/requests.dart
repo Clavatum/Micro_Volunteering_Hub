@@ -105,6 +105,50 @@ Future<FetchEventsResult> fetchEventsAPI(String? cursor) async {
   }
 }
 
+Future<Map<String, dynamic>> joinEventAPI(String eventId, String userId) async {
+  try {
+    final response = await http.post(
+      Uri.parse("$usedServerURL/event/$eventId/join"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({"user_id": userId}),
+    ).timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      return {
+        "ok": false,
+        "msg": "Request to API has failed with status code ${response.statusCode}.",
+      };
+    }
+  } on TimeoutException {
+    return {"ok": false, "msg": "Request to API server has timed out."};
+  }
+}
+
+Future<Map<String, dynamic>> leaveEventAPI(String eventId, String userId) async {
+  try {
+    final response = await http.post(
+      Uri.parse("$usedServerURL/event/$eventId/leave"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({"user_id": userId}),
+    ).timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      return {
+        "ok": false,
+        "msg": "Request to API has failed with status code ${response.statusCode}.",
+      };
+    }
+  } on TimeoutException {
+    return {"ok": false, "msg": "Request to API server has timed out."};
+  }
+}
+
 Future<Map<String, dynamic>> fetchUserAPI(String userID) async {
   try {
     final response = await http

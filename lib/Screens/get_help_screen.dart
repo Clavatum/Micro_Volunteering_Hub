@@ -18,6 +18,11 @@ import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:uuid/uuid.dart';
 
+enum EventJoinType {
+  instant,
+  requireApproval,
+}
+
 class GetHelpScreen extends ConsumerStatefulWidget {
   const GetHelpScreen({Key? key}) : super(key: key);
 
@@ -55,6 +60,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
   final List<int> durations = [15, 30, 60, 120, 240, 480, 1440, 2880];
   String? _selectedDuration;
   List<Tag> _selectedCategories = [];
+  bool _instantJoin = true;
 
   @override
   void initState() {
@@ -112,6 +118,8 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       time: _startDateTime ?? DateTime.now(),
       hostName: userName,
       capacity: _peopleNeeded,
+      instantJoin: _instantJoin,
+      participantCount: 0,
       imageUrl: url ?? 'not selected',
       tags: _selectedCategories,
     );
@@ -127,6 +135,7 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
       'title': title,
       'description': desc,
       'people_needed': _peopleNeeded,
+      'instant_join': _instantJoin,
       'duration': _durationMinutes, //Stored in minutes
       'starting_date': _startDateTime != null ? _startDateTime!.toUtc().toString() : "null",
     };
@@ -698,7 +707,56 @@ class _GetHelpScreenState extends ConsumerState<GetHelpScreen> {
                         onChanged: (v) => setState(() => _peopleNeeded = v ?? 1),
                       ),
                     ),
-
+                    const SizedBox(height: 16),
+                    Text(
+                      "Joining Policy",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87
+                      )
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.black87),
+                      ),
+                      child: Column(
+                        children: [
+                          RadioListTile<bool>(
+                            activeColor: primary,
+                            title: Text(
+                              "Instant Join",
+                              style: GoogleFonts.poppins(fontSize: 16, color: primary),
+                            ),
+                            subtitle: Text(
+                              "Anyone can join the event immediately.",
+                              style: GoogleFonts.poppins(fontSize: 13),
+                            ),
+                            value: true,
+                            groupValue: _instantJoin,
+                            onChanged: (v) => setState(() => _instantJoin = v!),
+                          ),
+                          RadioListTile<bool>(
+                            activeColor: primary,
+                            title: Text(
+                              "Approval Required",
+                              style: GoogleFonts.poppins(fontSize: 16, color: primary),
+                            ),
+                            subtitle: Text(
+                              "Host must approve join requests.",
+                              style: GoogleFonts.poppins(fontSize: 13),
+                            ),
+                            value: false,
+                            groupValue: _instantJoin,
+                            onChanged: (value) => setState(() => _instantJoin = value!,),
+                          ),
+                        ],
+                      )
+                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,

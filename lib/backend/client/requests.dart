@@ -7,7 +7,7 @@ import 'package:micro_volunteering_hub/models/event.dart';
 String localServerURL = "http://192.168.97.16:8000";
 
 String publicServerURL = "https://micro-volunteering-hub-backend.onrender.com";
-String usedServerURL = localServerURL;
+String usedServerURL = publicServerURL;
 class FetchEventsResult{
   final List<Event> events;
   final String? cursor;

@@ -1,6 +1,9 @@
 import json
 import os
 import asyncio
+import random
+import time
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import firebase_admin
 import logging
@@ -12,7 +15,10 @@ from utils import *
 from fastapi.concurrency import run_in_threadpool
 from google.cloud.firestore import FieldFilter
 from google.cloud.firestore import transactional
-WRITE_CONCURRENCY = 10
+MAX_RETRIES = 5
+WRITE_CONCURRENCY = 40
+GLOBAL_LIMIT = 120
+request_sem = asyncio.Semaphore(GLOBAL_LIMIT)
 write_queue = asyncio.Queue(maxsize=3000)
 
 #Connect the Firebase database
@@ -26,8 +32,11 @@ app = FastAPI(title = "QuickHelp")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
+@app.get("/")
+def serveIndex():
+    return FileResponse("static/index.html")
 @app.on_event("startup")
 async def startWorkers():
     for i in range(WRITE_CONCURRENCY):
@@ -59,55 +68,55 @@ def metrics():
 
 @app.post("/event/create")
 async def createEvent(event: Event):
-    def createEventTransaction(db, eventID, data):
-        doc_ref = db.collection("event_info").document(eventID)
-        transaction = db.transaction()
+    async with request_sem:
+        def createEventTransaction(db, eventID, data):
+            doc_ref = db.collection("event_info").document(eventID)
+            transaction = db.transaction()
 
-        @transactional
-        def txn(transaction):
-            snapshot = doc_ref.get(transaction=transaction)
-            if snapshot.exists:
-                return False
-            transaction.set(doc_ref, data)
-            return True
-        return txn(transaction)
+            @transactional
+            def txn(transaction):
+                snapshot = doc_ref.get(transaction=transaction)
+                if snapshot.exists:
+                    return False
+                transaction.set(doc_ref, data)
+                return True
+            return txn(transaction)
 
-    if write_queue.full():
-        return {"ok": False, "msg": "Server is overloaded, try again shortly."}
-    
-    #Check if coordinates are valid
-    if not ((-90 <= event.selected_lat <= 90) and (-180 <= event.selected_lon <= 180)):
-        return {"ok": False, "msg": "Location is not valid."}
-    
-    try:
-        #Duplication handling
-        eventID = generateEventID(event)
-        serverTime = datetime.now(timezone.utc)
-        expire_at =  event.starting_date + timedelta(minutes=event.duration)
+        if write_queue.full():
+            return {"ok": False, "msg": "Server is overloaded, try again shortly."}
         
-        data = {
-            **event.model_dump(),
-            "participant_count": 0,
-            "createdAt": serverTime,
-            "expireAt": expire_at
-        }
-
+        #Check if coordinates are valid
+        if not ((-90 <= event.selected_lat <= 90) and (-180 <= event.selected_lon <= 180)):
+            return {"ok": False, "msg": "Location is not valid."}
+        
         try:
-            created = await run_in_threadpool(createEventTransaction, db, eventID, data)
-            if not created:
-                return {"ok": False, "msg": "Event already exists."}
-            logger.info("Created event {} by user {}".format(eventID,event.user_id))
-            return {"ok": True, "event_id": eventID}
+            #Duplication handling
+            eventID = generateEventID(event)
+            serverTime = datetime.now(timezone.utc)
+            expire_at =  event.starting_date + timedelta(minutes=event.duration)
+            
+            data = {
+                **event.model_dump(),
+                "participant_count": 0,
+                "createdAt": serverTime,
+                "expireAt": expire_at
+            }
+
+            try:
+                created = await run_in_threadpool(createEventTransaction, db, eventID, data)
+                if not created:
+                    return {"ok": False, "msg": "Event already exists."}
+                logger.info("Created event {} by user {}".format(eventID,event.user_id))
+                return {"ok": True, "event_id": eventID}
+            except Exception as e:
+                logger.error("Transaction failed: {}".format(e))
         except Exception as e:
-            logger.error("Transaction failed: {}".format(e))
-    except Exception as e:
-        print(e)
-        print("Failed to create event")
-        return {"ok": False, "msg": "Failed to create event (internal API error)."}
+            print(e)
+            print("Failed to create event")
+            return {"ok": False, "msg": "Failed to create event (internal API error)."}
 
 @app.get("/events")
 async def getEvents(after: Optional[str] = Query(None, description="Last document ID"), limit: int = 50):
-    print(after)
     try:
         query = db.collection("event_info").order_by("createdAt")
         if after:
@@ -128,63 +137,72 @@ async def getEvents(after: Optional[str] = Query(None, description="Last documen
 
 @app.post("/event/{eventID}/join")
 async def joinEvent(eventID: str, body: JoinRequest):
-    def joinEventTransaction():
-        transaction = db.transaction()
+    async with request_sem:
+        def joinEventTransaction():
+            transaction = db.transaction()
 
-        @firestore.transactional
-        def run(transaction):
-            user_doc = db.collection("participants").document(eventID).collection("users").document(body.user_id)
-            event_doc = db.collection("event_info").document(eventID)
+            @firestore.transactional
+            def run(transaction):
+                user_doc = db.collection("participants").document(eventID).collection("users").document(body.user_id)
+                event_doc = db.collection("event_info").document(eventID)
 
-            user_snapshot = user_doc.get(transaction=transaction)
+                user_snapshot = user_doc.get(transaction=transaction)
 
-            if user_snapshot.exists:
-                return {"ok": False, "msg": "You already joined this event."}
-            
-            event_snapshot = event_doc.get(transaction=transaction)
-            event_data = event_snapshot.to_dict()
-            if event_data["participant_count"] >= event_data["people_needed"]:
-                return {"ok": False, "msg": "Event is full."}
-            transaction.set(user_doc, {
-                "joined_at": firestore.firestore.SERVER_TIMESTAMP
-            })
+                if user_snapshot.exists:
+                    return {"ok": False, "msg": "You already joined this event."}
+                
+                event_snapshot = event_doc.get(transaction=transaction)
+                event_data = event_snapshot.to_dict()
+                if event_data["participant_count"] >= event_data["people_needed"]:
+                    return {"ok": False, "msg": "Event is full."}
+                transaction.set(user_doc, {
+                    "joined_at": firestore.firestore.SERVER_TIMESTAMP
+                })
 
-            transaction.update(event_doc, {
-                "participant_count": firestore.firestore.Increment(1)
-            })
+                transaction.update(event_doc, {
+                    "participant_count": firestore.firestore.Increment(1)
+                })
 
-            return {"ok": True}
-        return run(transaction)
-    result = await run_in_threadpool(joinEventTransaction)
-    return result
+                return {"ok": True}
+            for i in range(MAX_RETRIES):
+                try:
+                    return run(transaction)
+                except Exception as e:
+                    sleep = (2 ** i) * 0.05 + random.random() * 0.05
+                    time.sleep(sleep)
+            return {"ok": False, "msg": "System is busy, try again shortly."}
+        result = await run_in_threadpool(joinEventTransaction)
+        return result
 
 @app.post("/event/{eventID}/leave")
 async def leaveEvent(eventID: str, user_id: str):
-    def leaveEventTransaction():
-        transaction = db.transaction()
+    async with request_sem:
+        def leaveEventTransaction():
+            transaction = db.transaction()
 
-        @firestore.transactional
-        def run(transaction):
-            user_doc = db.collection("participants").document(eventID).collection("users").document(user_id)
-            event_doc = db.collection("event_info").document(eventID)
+            @firestore.transactional
+            def run(transaction):
+                user_doc = db.collection("participants").document(eventID).collection("users").document(user_id)
+                event_doc = db.collection("event_info").document(eventID)
 
-            user_snapshot = user_doc.get(transaction=transaction)
+                user_snapshot = user_doc.get(transaction=transaction)
 
-            if not user_snapshot.exists:
-                return False
-            
-            transaction.delete(user_doc)
+                if not user_snapshot.exists:
+                    return False
+                
+                transaction.delete(user_doc)
 
-            transaction.update(event_doc, {
-                "participant_count": firestore.firestore.Increment(-1)
-            })
+                transaction.update(event_doc, {
+                    "participant_count": firestore.firestore.Increment(-1)
+                })
 
-            return True
-        return run(transaction)
-    removed = await run_in_threadpool(leaveEventTransaction)
-    if not removed:
-        return {"ok": False, "msg": "You already did not join this event."}
-    return {"ok": True}
+                return True
+            return run(transaction)
+        removed = await run_in_threadpool(leaveEventTransaction)
+        if not removed:
+            return {"ok": False, "msg": "You already did not join this event."}
+        return {"ok": True}
+
 @app.get("/event/delete/all")
 def removeEventAll(secret: str = Query(...)):
     if secret != os.environ.get("ADMIN_SECRET"):
@@ -212,17 +230,18 @@ async def getUser(id: str = Query(...)):
 
 @app.post("/user/create")
 async def createUser(user: User):
-    try:
-        serverTime = datetime.now(timezone.utc)
-        def setUser():
-            return db.collection("user_info").document(user.id).set({
-                **user.model_dump(),
-                "updatedAt": serverTime
-            })
-        write_result = await run_in_threadpool(setUser)
-        logger.info("Created user with id {}".format(user.id))
+    async with request_sem:
+        try:
+            serverTime = datetime.now(timezone.utc)
+            def setUser():
+                return db.collection("user_info").document(user.id).set({
+                    **user.model_dump(),
+                    "updatedAt": serverTime
+                })
+            write_result = await run_in_threadpool(setUser)
+            logger.info("Created user with id {}".format(user.id))
 
-        return {"ok": True, "id": user.id}
-    except Exception as e:
-        print("Failed to create user: {}".format(e))
-        return {"ok": False, "msg": "Failed to create user (internal API error)."}
+            return {"ok": True, "id": user.id}
+        except Exception as e:
+            print("Failed to create user: {}".format(e))
+            return {"ok": False, "msg": "Failed to create user (internal API error)."}

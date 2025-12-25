@@ -54,7 +54,7 @@ class EventsPreview extends StatelessWidget {
                           ),
                           child: Image.network(
                             events[index].imageUrl,
-                            width: (MediaQuery.of(context).size.width * 0.34).clamp(96.0, 160.0),
+                            width: (MediaQuery.of(context).size.width * 0.3).clamp(96.0, 160.0),
                             height: 110,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
@@ -69,50 +69,44 @@ class EventsPreview extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 8,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  events[index].title.isEmpty ? "Unnamed Event" : events[index].title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                events[index].title.isEmpty ? "Unnamed Event" : events[index].title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.person, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    events[index].hostName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(fontSize: 14),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.person, size: 16),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      events[index].hostName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 12,),
-                                    const Icon(Icons.person_add, size: 16),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "${events[index].participantCount}/${events[index].capacity}",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(fontSize: 14),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 12,),
+                                  const Icon(Icons.person_add, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "${events[index].participantCount}/${events[index].capacity}",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],

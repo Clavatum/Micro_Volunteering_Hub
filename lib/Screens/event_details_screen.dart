@@ -4,12 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/models/join_request.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class EventDetailsScreen extends ConsumerWidget {
   final Event event;
@@ -18,35 +21,42 @@ class EventDetailsScreen extends ConsumerWidget {
     required this.event,
   });
 
+  Future<bool> _requestJoin(Map<String, dynamic> user, WidgetRef ref) async {
+    /* NOT IMPLEMENTED YET DO NOT REMOVE
+    var data = {
+      'requester_name': user["user_name"],
+      'event_id': event.eventId,
+      'requester_id': user["id"],
+      'host_id': event.userId,
+      'status': 'pending',
+      'requested_at': FieldValue.serverTimestamp(),
+    };*/
+    debugPrint("${event.eventId}, ${user["id"]}");
+    var apiResponse = await joinEventAPI(event.eventId, user["id"]);
+    if(!apiResponse["ok"]){
+      showGlobalSnackBar(apiResponse["msg"]);
+      return false;
+    }
+    else{
+      showGlobalSnackBar("Joined to event successfully.");
+      ref.read(eventsProvider.notifier).addAttendee(event.eventId, user["id"]);
+      return true;
+    }
+    /*JOIN REQUESTS WITH PENDING STATE ARE NOT IMPLEMENTED YET, DO NOT REMOVE
+    await firestore.collection('join_requests').doc(requestId).set(data);
+    ref
+        .read(joinRequestProvider.notifier)
+        .addJoinRequest(
+          JoinRequest.fromJson(data),
+        );*/
+  }
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     String _distance = '${event.distanceToUser}m';
     Map<String, dynamic> _userData = ref.watch(userProvider);
-    bool canJoin = _userData['id'] != event.userId;
-
-    Future<void> _requestJoin() async {
-      final firestore = FirebaseFirestore.instance;
-      final user = FirebaseAuth.instance.currentUser;
-
-      final requestId = "${event.eventId}_${user!.uid}";
-      var data = {
-        'requester_name': user.displayName,
-        'event_id': event.eventId,
-        'requester_id': user.uid,
-        'host_id': event.userId,
-        'status': 'pending',
-        'requested_at': FieldValue.serverTimestamp(),
-      };
-
-      await firestore.collection('join_requests').doc(requestId).set(data);
-      ref
-          .read(joinRequestProvider.notifier)
-          .addJoinRequest(
-            JoinRequest.fromJson(data),
-          );
-      showGlobalSnackBar("requested");
-    }
-
+    List<Event>? attendedEvents = _userData["user_attended_events"] ?? [];
+    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents!.any((e) => e.eventId == event.eventId));
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -177,19 +187,29 @@ class EventDetailsScreen extends ConsumerWidget {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton(
-            onPressed: canJoin
-                ? () {
-                    _requestJoin();
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          child: Consumer(
+            builder: (context, ref, _){
+              final user = ref.watch(userProvider);
+              return ElevatedButton(
+                onPressed: canJoin
+                  ? () async{
+                      var success = await _requestJoin(user, ref);
+                      if (success){
+                        ref.read(userProvider.notifier).attendEvent(event);
+                        Navigator.pop(context);
+                      }
+                    }
+                  : null,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('Join', style: GoogleFonts.poppins(fontSize: 18)
               ),
-            ),
-            child: Text('Join', style: GoogleFonts.poppins(fontSize: 18)),
+            );
+            }
           ),
         ),
       ),

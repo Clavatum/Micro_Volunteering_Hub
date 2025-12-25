@@ -23,6 +23,20 @@ class EventsProvider extends StateNotifier<List<Event>> {
     if (filtered.isEmpty) return;
     state = [...state, ...filtered];
   }
+
+  void addAttendee(String eventId, String userId) {
+    state = state.map((event) {
+      if (event.eventId == eventId) {
+        if (event.attendantIds.contains(userId)) return event;
+
+        return event.copyWith(
+          attendantIds: [...event.attendantIds, userId],
+          participantCount: event.participantCount + 1,
+        );
+      }
+      return event;
+    }).toList();
+  }
 }
 
 var eventsProvider = StateNotifierProvider<EventsProvider, List<Event>>((ref) => EventsProvider());

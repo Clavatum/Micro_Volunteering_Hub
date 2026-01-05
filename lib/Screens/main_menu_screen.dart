@@ -90,7 +90,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   Future<void> startEventPolling() async {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       try {
         await fetchEvents();
       } catch (e) {

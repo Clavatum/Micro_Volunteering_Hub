@@ -4,3 +4,4 @@ firebase-admin
 python-dotenv
 pydantic
 typing-extensions
+cryptography

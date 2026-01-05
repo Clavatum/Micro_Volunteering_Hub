@@ -228,9 +228,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fontSize: 18,
           ),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.white,
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await ref
                   .read(

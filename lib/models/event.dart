@@ -72,7 +72,6 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     final DateTime parsedDate = DateTime.parse(json["starting_date"]).toLocal();
-    print(json);
     return Event(
       attendantIds: List<String>.from(json['attendant_ids'] ?? []),
       eventId: json["id"],

@@ -31,7 +31,6 @@ class EventDetailsScreen extends ConsumerWidget {
       'status': 'pending',
       'requested_at': FieldValue.serverTimestamp(),
     };*/
-    debugPrint("${event.eventId}, ${user["id"]}");
     var apiResponse = await joinEventAPI(event.eventId, user["id"]);
     if(!apiResponse["ok"]){
       showGlobalSnackBar(apiResponse["msg"]);
@@ -55,8 +54,9 @@ class EventDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     String _distance = '${event.distanceToUser}m';
     Map<String, dynamic> _userData = ref.watch(userProvider);
-    List<Event>? attendedEvents = _userData["user_attended_events"] ?? [];
-    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents!.any((e) => e.eventId == event.eventId));
+    List<String> attendedEvents = _userData["user_attended_events"];
+    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents!.any((e) => e == event.eventId));
+    const Color primary = Color(0xFF00A86B);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -195,18 +195,17 @@ class EventDetailsScreen extends ConsumerWidget {
                   ? () async{
                       var success = await _requestJoin(user, ref);
                       if (success){
-                        ref.read(userProvider.notifier).attendEvent(event);
+                        ref.read(userProvider.notifier).attendEvent(event.eventId);
                         Navigator.pop(context);
                       }
                     }
                   : null,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14.0),
                 ),
-                child: Text('Join', style: GoogleFonts.poppins(fontSize: 18)
+                child: Text('Join', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)
               ),
             );
             }

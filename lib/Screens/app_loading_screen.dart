@@ -77,6 +77,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
         final apiResponse = await fetchUserAPI(user.uid);
         if (apiResponse["user"] != null){
           userData = apiResponse["user"];
+          userData!["user_attended_events"] = List<String>.from(apiResponse["user_attended_events"]);
         }
         //If no user data exists then create the user data
         if (userData == null){
@@ -89,6 +90,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
             "photo_path": "",
             "photo_path_custom": "",
             "photo_iscustom": false,
+            "user_attended_events": List<String>.empty(),
             "updated_at": DateTime.now().millisecondsSinceEpoch,
           };
           final apiResponse = await createAndStoreUserAPI(userData);
@@ -114,6 +116,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       if (!mounted) return;
       ref.read(userProvider.notifier).setUser(userData);
     } catch (e) {
+      print(e);
       showGlobalSnackBar("App initialization is failed. Exit application and try again later.");
     }
   }

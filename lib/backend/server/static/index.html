@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Community Help – Instant Local Volunteering</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="See local help requests around you, join instantly and make a difference.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22></text></svg>">
+    <style>
+        .scroll-snap {
+            scroll-snap-type: x mandatory;
+        }
+
+        .snap-card {
+            scroll-snap-align: start;
+        }
+
+        /* scrollbar gizle ama swipe çalışsın */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+
+
+</head>
+
+<body class="text-gray-800">
+    <!-- HERO -->
+    <section class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div class="container mx-auto px-6 flex flex-col md:flex-row items-center gap-10">
+            <div class="flex-1 text-center md:text-left">
+                <img src="static/img/QuickHelp-logo.png">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-green-600">Community Help</h1>
+                <p class="mt-4 text-lg md:text-xl text-gray-700">Discover nearby volunteering events in real time. Join,
+                    chat and help instantly.</p>
+                <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                    <a href="#demo"
+                        class="px-6 py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition">Request
+                        Free Demo</a>
+                    <a href="https://github.com/Clavatum/Micro_Volunteering_Hub" target="_blank"
+                        class="px-6 py-3 rounded-lg border-2 border-green-500 text-green-600 font-semibold hover:bg-green-500 hover:text-white transition">GitHub</a>
+                </div>
+            </div>
+            <div class="flex-1">
+                <img src="static/img/screen1.png" alt="App screenshot" class="rounded-3xl shadow-2xl max-w-full">
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">How it Works</h2>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div>
+                    <div
+                        class="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-2xl">
+                        1</div>
+                    <h3 class="font-semibold text-lg">Discover</h3>
+                    <p class="text-gray-600">Open the map and see help requests around you.</p>
+                </div>
+                <div>
+                    <div
+                        class="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-2xl">
+                        2</div>
+                    <h3 class="font-semibold text-lg">Join</h3>
+                    <p class="text-gray-600">Tap "Join" and get instant notifications.</p>
+                </div>
+                <div>
+                    <div
+                        class="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-2xl">
+                        3</div>
+                    <h3 class="font-semibold text-lg">Help & Chat</h3>
+                    <p class="text-gray-600">Communicate with the organizer and make an impact.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">Key Features</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+                <div class="p-6 rounded-xl bg-white shadow">
+                    <div class="text-3xl mb-3"><img src="static/img/free-location-map-icon-2956-thumb.png"></div>
+                    <h4 class="font-semibold">Real-time Map</h4>
+                </div>
+                <div class="p-6 rounded-xl bg-white shadow">
+                    <div class="text-3xl mb-3"><img src="static/img/4226663.png"></div>
+                    <h4 class="font-semibold">Instant Notifications</h4>
+                </div>
+                <div class="p-6 rounded-xl bg-white shadow">
+                    <div class="text-3xl mb-3"><img src="static/img/158475-pic-bubble-chat-icon-png-image-high-quality.png"></div>
+                    <h4 class="font-semibold">Safe Chat</h4>
+                </div>
+                <div class="p-6 rounded-xl bg-white shadow">
+                    <div class="text-3xl mb-3"><img src="static/img/8058572.png"></div>
+                    <h4 class="font-semibold">Category Filter</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GALLERY -->
+    <!-- SCREENSHOTS – kaydırılabilir kartlar -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-10">App Screenshots</h2>
+
+            <!-- OKLAR (masaüstü) -->
+            <div class="hidden md:flex justify-between items-center max-w-4xl mx-auto mb-6">
+                <button id="prevBtn" class="p-3 rounded-full bg-green-500 text-white hover:bg-green-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <button id="nextBtn" class="p-3 rounded-full bg-green-500 text-white hover:bg-green-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- KART KONTENYERİ -->
+            <div id="slider" class="flex gap-6 overflow-x-auto scroll-snap no-scrollbar md:max-w-4xl md:mx-auto">
+                <!-- Kartlar -->
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/private_chat.png" alt="Private Chat" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">Private Chat</div>
+                </div>
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/join_events.png" alt="Join Events" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">Join Events</div>
+                </div>
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/help_or_get_help_png.png" alt="Help or Get Help" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">Help or Get Help</div>
+                </div>
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/chat_with_others.png" alt="Chat with Others" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">Chat with Others</div>
+                </div>
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/get_notifications.png" alt="Get Notifications" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">Get Notifications</div>
+                </div>
+                <div class="snap-card flex-shrink-0 w-72 rounded-2xl overflow-hidden shadow-lg">
+                    <img src="static/img/see_details_of_events.png" alt="See Details of Events" class="w-full">
+                    <div class="p-4 bg-gray-50 text-center font-semibold text-gray-700">See Details of Events</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DEMO REQUEST -->
+    <section id="demo" class="py-20 bg-gradient-to-br from-green-500 to-blue-500 text-white">
+        <div class="container mx-auto px-6 max-w-2xl">
+            <h2 class="text-3xl font-bold text-center mb-6">Request a Free Demo</h2>
+            <form action="https://formspree.io/f/YOUR-FORMSPREE-ID" method="POST" class="space-y-4">
+                <input type="text" name="name" placeholder="Your Name" required
+                    class="w-full px-4 py-3 rounded text-gray-900">
+                <input type="email" name="email" placeholder="Email Address" required
+                    class="w-full px-4 py-3 rounded text-gray-900">
+                <textarea name="message" rows="4" placeholder="Tell us about your project (optional)"
+                    class="w-full px-4 py-3 rounded text-gray-900"></textarea>
+                <button type="submit"
+                    class="w-full py-3 rounded bg-white text-green-600 font-semibold hover:bg-gray-100 transition">Send
+                    Request</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>Built with ❤️ by Team Community Help – Final Project 2025</p>
+            <div class="mt-4 space-x-4">
+                <a href="https://github.com/Clavatum/Micro_Volunteering_Hub" class="hover:text-green-400">GitHub</a>
+                <a href="mailto:" class="hover:text-green-400">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script defer>
+        const slider = document.getElementById('slider');
+        const prev = document.getElementById('prevBtn');
+        const next = document.getElementById('nextBtn');
+        const cardWidth = 288 + 24;
+        prev.onclick = () => slider.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+        next.onclick = () => slider.scrollBy({ left: cardWidth, behavior: 'smooth' });
+    </script>
+</body>
+
+</html>

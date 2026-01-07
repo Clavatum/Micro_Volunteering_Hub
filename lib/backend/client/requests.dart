@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/models/event.dart';
 
 //This URL is a local ip for testing purposes.
-String localServerURL = "http://192.168.97.16:8000";
+String localServerURL = "http://192.168.137.16:8000";
 
 String publicServerURL = "https://micro-volunteering-hub-backend.onrender.com";
 String usedServerURL = publicServerURL;
@@ -158,6 +158,27 @@ Future<Map<String, dynamic>> fetchUserAPI(String userID) async {
           ),
         )
         .timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      return {"ok": false, "msg": "Request to API has failed with status code ${response.statusCode}."};
+    }
+  } on TimeoutException {
+    print("fetchUserAPI: Request to API server has timed out.");
+    return {"ok": false, "msg": "Request to API server has timed out."};
+  }
+}
+
+Future<Map<String, dynamic>> fetchMessagesAPI(String eventID) async{
+  try {
+    final response = await http
+        .get(
+          Uri.parse(
+            "$usedServerURL/event/$eventID/chats",
+          ),
+        )
+        .timeout(const Duration(seconds: 5));
+    print(response.statusCode);
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {

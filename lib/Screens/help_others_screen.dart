@@ -27,11 +27,17 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
   Map<String, dynamic>? _userData;
   Position? _currentPosition;
 
+  bool _followUser = true;
+  bool _mapInitialized = false;
+
   void _centerMapToUser() {
     if (_currentPosition == null) return;
+
+    _followUser = true;
+
     _mapController.move(
       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-      13.0,
+      14.0,
     );
   }
 
@@ -116,7 +122,10 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
       (previous, next) {
         final pos = next?["user_position"] as Position?;
 
-        if (pos != null) {
+        if (pos != null && !_mapInitialized) {
+          _mapInitialized = true;
+          _currentPosition = pos;
+
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _mapController.move(
               LatLng(pos.latitude, pos.longitude),
@@ -180,7 +189,6 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                onMapReady: _centerMapToUser,
                 initialCenter: _currentPosition != null
                     ? LatLng(
                         _currentPosition!.latitude,
@@ -188,9 +196,15 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
                       )
                     : const LatLng(41.0082, 28.9784),
                 initialZoom: 14.0,
-                minZoom: 5.0,
-                maxZoom: 18.0,
+                minZoom: 5,
+                maxZoom: 18,
+                onPositionChanged: (pos, hasGesture) {
+                  if (hasGesture) {
+                    _followUser = false;
+                  }
+                },
               ),
+
               children: [
                 TileLayer(
                   urlTemplate:

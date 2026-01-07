@@ -12,8 +12,10 @@ import 'package:micro_volunteering_hub/models/join_request.dart';
 import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
+import 'package:micro_volunteering_hub/providers/network_provider.dart';
 import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
 import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 import 'package:micro_volunteering_hub/widgets/last_event_preview.dart';
 import 'profile_screen.dart';
@@ -52,8 +54,15 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   Future<void> _init() async {
+    final isOnline = ref.read(backendHealthProvider);
     _userData = ref.read(userProvider);
-    await fetchEvents();
+    if(isOnline){
+      await fetchEvents();
+    }
+    else{
+      List<Event> events = await UserLocalDb.getEventsDB();
+      ref.read(eventsProvider.notifier).addEvents(events);
+    }
     _setDistances();
     _setCloseEvents();
     await _getRequests();
@@ -64,7 +73,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       setState(() => _isLoading = false);
     }
   }
-
   Future<void> fetchEvents() async {
     if (_isFetching) return;
     _isFetching = true;
@@ -81,6 +89,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     .where((e) => e.userId == _userData!['id'])
                     .toList(),
               );
+        }
+        for(Event e in fetchedEvents.events){
+          UserLocalDb.storeEventDB(e);
         }
       }
     } catch (e) {

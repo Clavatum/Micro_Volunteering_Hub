@@ -78,7 +78,7 @@ class EventDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Map<String, dynamic> _userData = ref.watch(userProvider);
-    List<String> attendedEvents = _userData["user_attended_events"];
+    List<String> attendedEvents = _userData["user_attended_events"] ?? List<String>.empty(growable: true);
     bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents.any((e) => e == event.eventId));
 
     return Dialog(

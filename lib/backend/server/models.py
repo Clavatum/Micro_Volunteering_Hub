@@ -13,11 +13,16 @@ class Event(BaseModel):
     title: str
     description: str
     people_needed: int = Field(..., gt=0)
+    instant_join: bool
     duration: int = Field(..., gt=0)
     starting_date: datetime
 
 class User(BaseModel):
     id: str
     photo_url: str
+    photo_url_custom: str
     user_mail: str
     user_name: str
+
+class JoinRequest(BaseModel):
+    user_id: str

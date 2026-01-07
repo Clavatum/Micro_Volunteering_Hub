@@ -6,9 +6,8 @@ import 'package:micro_volunteering_hub/providers/user_provider.dart';
 final appReadyProvider = Provider<bool>((ref){
   final auth = ref.watch(authControllerProvider);
   final userData = ref.watch(userProvider);
-
   if(auth != AuthStatus.authenticated) return false;
-  if(userData.isEmpty) return false;
+  if(userData["user_name"] == null || userData.isEmpty) return false;
 
   return true;
 });

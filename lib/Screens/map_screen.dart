@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/position_service.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -202,16 +203,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProvider
                       height: 50,
                       child: GestureDetector(
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                'Your location',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
+                          showGlobalSnackBar("Your location");
                         },
                         child: Container(
                           decoration: BoxDecoration(

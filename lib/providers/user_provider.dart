@@ -16,10 +16,16 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
   void updateUserProfile(String url) {
     state = {
       ...state,
-      'photo_url': url,
+      'photo_url_custom': url,
     };
   }
 
+  void updateUserAvatarState(bool isCustom){
+    state = {
+      ...state,
+      "photo_iscustom": isCustom,
+    };
+  }
   void setUserEvents(List<Event> usersEvents) {
     state = {...state, 'users_events': usersEvents};
   }
@@ -44,14 +50,14 @@ class UserProvider extends StateNotifier<Map<String, dynamic>> {
     };
   }
 
-  void setUserAttendedEvents(List<Event> e) {
-    state = {...state, 'user_attended_events': e};
+  void setUserAttendedEvents(List<String> s) {
+    state = {...state, 'user_attended_events': s};
   }
 
-  void attendEvent(Event e) {
-    List<Event> events = state['user_attended_events'];
-    events.add(e);
-    state = {...state, 'user_attended_events': events};
+  void attendEvent(String s) {
+    List<String> eventIds = state['user_attended_events'] ?? [];
+    eventIds.add(s);
+    state = {...state, 'user_attended_events': eventIds};
   }
 
   void clear(){

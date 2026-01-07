@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
+import 'package:micro_volunteering_hub/providers/network_provider.dart';
 import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/utils/database.dart';
@@ -56,14 +57,6 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
     }
   }
 
-  Future<bool> hasInternet() async {
-    final result = await Connectivity().checkConnectivity();
-    final internet =
-        result.contains(ConnectivityResult.mobile) ||
-        result.contains(ConnectivityResult.wifi) ||
-        result.contains(ConnectivityResult.vpn);
-    return internet;
-  }
 
   Future<void> _initApp() async {
     Future.microtask(initLocation);
@@ -76,28 +69,41 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
       }
 
       updateLoadingText("Checking Internet Connection");
-      final online = await hasInternet();
-
+      final online = await ref.read(backendHealthProvider.notifier).check();
       Map<String, dynamic>? userData;
       if (online) {
         updateLoadingText("Loading Kindness...");
-        userData = {
-          "id": user.uid,
-          "user_name": user.displayName ?? "unknown",
-          "user_mail": user.email,
-          "photo_url": user.photoURL ?? "",
-          "updated_at": DateTime.now().millisecondsSinceEpoch,
-        };
-        //Don't upload with photo_path
-        final apiResponse = await createAndStoreUserAPI(userData);
-        if (!apiResponse["ok"]) {
-          showGlobalSnackBar(apiResponse["msg"]);
+        //Try to fetch user first
+        final apiResponse = await fetchUserAPI(user.uid);
+        if (apiResponse["user"] != null){
+          userData = apiResponse["user"];
+          userData!["user_attended_events"] = List<String>.from(apiResponse["user_attended_events"]);
+        }
+        //If no user data exists then create the user data
+        if (userData == null){
+          userData = {
+            "id": user.uid,
+            "user_name": user.displayName ?? "unknown",
+            "user_mail": user.email,
+            "photo_url": user.photoURL ?? "",
+            "photo_url_custom": "",
+            "photo_path": "",
+            "photo_path_custom": "",
+            "photo_iscustom": false,
+            "user_attended_events": List<String>.empty(),
+            "updated_at": DateTime.now().millisecondsSinceEpoch,
+          };
+          final apiResponse = await createAndStoreUserAPI(userData);
+          if (!apiResponse["ok"]) {
+            showGlobalSnackBar(apiResponse["msg"]);
+          }
         }
 
         userData["photo_path"] = await downloadAndSaveImage(
           userData["photo_url"],
-          userData["id"],
+          "user_${userData["id"]}.png",
         );
+        userData["photo_iscustom"] = await UserLocalDb.getCurrentAvatarState();
         await UserLocalDb.saveUserAndActivate(userData);
       } else {
         updateLoadingText("Fetching User Data From Database");
@@ -108,9 +114,10 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
         throw Exception("User Data is Missing");
       }
       if (!mounted) return;
-      ref.read(userProvider.notifier).setUser(userData!);
+      ref.read(userProvider.notifier).setUser(userData);
     } catch (e) {
-      showGlobalSnackBar("App Initialization Failed");
+      print(e);
+      showGlobalSnackBar("App initialization is failed. Exit application and try again later.");
     }
   }
 

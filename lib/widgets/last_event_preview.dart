@@ -89,6 +89,7 @@ class LastEventPreview extends StatelessWidget {
               right: 16,
               bottom: 16,
               child: Column(
+                mainAxisSize: MainAxisSize.max,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -105,14 +106,19 @@ class LastEventPreview extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Row(
+                    mainAxisSize: MainAxisSize.max,
                     children: [
                       Icon(Icons.person, color: Colors.white, size: 16),
                       const SizedBox(width: 6),
-                      Text(
-                        event.hostName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.white.withAlpha(230), // was 0.9
+                      Expanded(
+                        child: Text(
+                          event.hostName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.white.withAlpha(230), // was 0.9
+                          ),
                         ),
                       ),
                     ],
@@ -124,11 +130,13 @@ class LastEventPreview extends StatelessWidget {
                     children: [
                       Icon(Icons.access_time, color: Colors.white, size: 16),
                       const SizedBox(width: 6),
-                      Text(
-                        "${event.time.day}.${event.time.month}.${event.time.year}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.white.withAlpha(230), // was 0.9
+                      Expanded(
+                        child: Text(
+                          "${event.time.day}.${event.time.month}.${event.time.year}",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.white.withAlpha(230), // was 0.9
+                          ),
                         ),
                       ),
                     ],

@@ -55,7 +55,7 @@ class EventDetailsScreen extends ConsumerWidget {
     String _distance = '${event.distanceToUser}m';
     Map<String, dynamic> _userData = ref.watch(userProvider);
     List<String> attendedEvents = _userData["user_attended_events"];
-    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents!.any((e) => e == event.eventId));
+    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents.any((e) => e == event.eventId));
     const Color primary = Color(0xFF00A86B);
     return Scaffold(
       appBar: AppBar(

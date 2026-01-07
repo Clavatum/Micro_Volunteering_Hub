@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/chat_screen.dart';
 import 'package:micro_volunteering_hub/Screens/notification_screen.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -269,19 +270,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.notifications,
-                        color: activeColor,
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => NotificationScreen(),
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -375,6 +363,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
           child: Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
                   child: IconButton(
@@ -386,7 +375,41 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 75),
+                const SizedBox(width: 30),
+                Expanded(
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.notifications,
+                      size: 32,
+                      color: _navIndex == 1 ? primary : Colors.black54,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => NotificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 100),
+                Expanded(
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.message,
+                      size: 32,
+                      color: _navIndex == 2 ? primary : Colors.black54,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 30),
                 Expanded(
                   child: IconButton(
                     onPressed: () {
@@ -399,7 +422,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     icon: Icon(
                       Icons.person,
                       size: 32,
-                      color: _navIndex == 1 ? primary : Colors.black54,
+                      color: _navIndex == 3 ? primary : Colors.black54,
                     ),
                   ),
                 ),

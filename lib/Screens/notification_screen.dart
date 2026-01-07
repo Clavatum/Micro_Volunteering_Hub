@@ -72,23 +72,6 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     }
 
     return Scaffold(
-      floatingActionButton: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: primary,
-        ),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(),
-            ),
-          );
-        },
-        label: Icon(
-          color: Colors.white,
-          Icons.message,
-          size: 30,
-        ),
-      ),
       appBar: AppBar(
         backgroundColor: primary,
         elevation: 2,

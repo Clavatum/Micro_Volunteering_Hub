@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 
 class EventDialog extends ConsumerWidget {
   final Event event;
@@ -17,6 +20,35 @@ class EventDialog extends ConsumerWidget {
     required this.event,
     this.onJoin,
   });
+
+  Future<bool> _requestJoin(Map<String, dynamic> user, WidgetRef ref) async {
+    /* NOT IMPLEMENTED YET DO NOT REMOVE
+    var data = {
+      'requester_name': user["user_name"],
+      'event_id': event.eventId,
+      'requester_id': user["id"],
+      'host_id': event.userId,
+      'status': 'pending',
+      'requested_at': FieldValue.serverTimestamp(),
+    };*/
+    var apiResponse = await joinEventAPI(event.eventId, user["id"]);
+    if(!apiResponse["ok"]){
+      showGlobalSnackBar(apiResponse["msg"]);
+      return false;
+    }
+    else{
+      showGlobalSnackBar("Joined to event successfully.");
+      ref.read(eventsProvider.notifier).addAttendee(event.eventId, user["id"]);
+      return true;
+    }
+    /*JOIN REQUESTS WITH PENDING STATE ARE NOT IMPLEMENTED YET, DO NOT REMOVE
+    await firestore.collection('join_requests').doc(requestId).set(data);
+    ref
+        .read(joinRequestProvider.notifier)
+        .addJoinRequest(
+          JoinRequest.fromJson(data),
+        );*/
+  }
 
   Future<String?> _fetchAddress() async {
     try {
@@ -58,8 +90,9 @@ class EventDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var _userData = ref.watch(userProvider);
-    bool canJoin = _userData['id'] != event.userId;
+    Map<String, dynamic> _userData = ref.watch(userProvider);
+    List<String> attendedEvents = _userData["user_attended_events"];
+    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents.any((e) => e == event.eventId));
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -264,21 +297,34 @@ class EventDialog extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton(
-                onPressed: canJoin ? onJoin ?? () => Navigator.of(context).pop() : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A86B).withAlpha(220),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    "Join Event",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
+              child: Consumer(
+                builder: (context, ref, _){
+                  final user = ref.watch(userProvider);
+                  return ElevatedButton(
+                    onPressed: canJoin
+                      ? () async{
+                          var success = await _requestJoin(user, ref);
+                          if (success){
+                            ref.read(userProvider.notifier).attendEvent(event.eventId);
+                            Navigator.pop(context);
+                          }
+                        }
+                      : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A86B).withAlpha(220),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        "Join Event",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  );
+                }
               ),
             ),
             const SizedBox(width: 12),

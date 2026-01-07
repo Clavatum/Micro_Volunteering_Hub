@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/models/event.dart';
 
 //This URL is a local ip for testing purposes.
-String localServerURL = "http://192.168.137.16:8000";
+String localServerURL = "http://192.168.77.16:8000";
 
 String publicServerURL = "https://micro-volunteering-hub-backend.onrender.com";
 String usedServerURL = publicServerURL;
@@ -105,14 +105,14 @@ Future<FetchEventsResult> fetchEventsAPI(String? cursor) async {
   }
 }
 
-Future<Map<String, dynamic>> joinEventAPI(String eventId, String userId) async {
+Future<Map<String, dynamic>> joinEventAPI(String eventId, String userId, String userName) async {
   try {
     final response = await http.post(
       Uri.parse("$usedServerURL/event/$eventId/join"),
       headers: {
         "Content-Type": "application/json",
       },
-      body: jsonEncode({"user_id": userId}),
+      body: jsonEncode({"user_id": userId, "user_name": userName}),
     ).timeout(const Duration(seconds: 5));
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
@@ -145,6 +145,48 @@ Future<Map<String, dynamic>> leaveEventAPI(String eventId, String userId) async 
       };
     }
   } on TimeoutException {
+    return {"ok": false, "msg": "Request to API server has timed out."};
+  }
+}
+
+Future<Map<String, dynamic>> eventRequestsAPI(String eventId, String userId, String status) async {
+  try {
+    final response = await http.post(
+      Uri.parse("$usedServerURL/event/$eventId/requests"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({"user_id": userId, "status": status}),
+    ).timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      return {
+        "ok": false,
+        "msg": "Request to API has failed with status code ${response.statusCode}.",
+      };
+    }
+  } on TimeoutException {
+    return {"ok": false, "msg": "Request to API server has timed out."};
+  }
+}
+
+Future<Map<String, dynamic>> fetchEventRequestsAPI(String userID, String? cursor) async{
+  try {
+    final response = await http
+        .get(
+          Uri.parse(
+            (cursor == null) ? "$usedServerURL/$userID/requests" : "$usedServerURL/$userID/requests?after=$cursor",
+          ),
+        )
+        .timeout(const Duration(seconds: 5));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      return {"ok": false, "msg": "Request to API has failed with status code ${response.statusCode}."};
+    }
+  } on TimeoutException {
+    print("fetchEventRequestsAPI: Request to API server has timed out.");
     return {"ok": false, "msg": "Request to API server has timed out."};
   }
 }
@@ -185,7 +227,7 @@ Future<Map<String, dynamic>> fetchMessagesAPI(String eventID) async{
       return {"ok": false, "msg": "Request to API has failed with status code ${response.statusCode}."};
     }
   } on TimeoutException {
-    print("fetchUserAPI: Request to API server has timed out.");
+    print("fetchMessagesAPI: Request to API server has timed out.");
     return {"ok": false, "msg": "Request to API server has timed out."};
   }
 }

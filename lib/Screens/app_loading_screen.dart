@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/providers/network_provider.dart';
@@ -90,7 +87,7 @@ class _AppLoadingScreenState extends ConsumerState<AppLoadingScreen> {
             "photo_path": "",
             "photo_path_custom": "",
             "photo_iscustom": false,
-            "user_attended_events": List<String>.empty(),
+            "user_attended_events": List<String>.empty(growable: true),
             "updated_at": DateTime.now().millisecondsSinceEpoch,
           };
           final apiResponse = await createAndStoreUserAPI(userData);

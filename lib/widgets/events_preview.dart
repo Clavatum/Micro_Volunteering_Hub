@@ -59,9 +59,10 @@ class EventsPreview extends StatelessWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
+                                width: 115,
                                 color: Colors.green,
                                 child: Center(
-                                  child: Icon(Icons.event, size: 48, color: Colors.black),
+                                  child: Icon(Icons.event, size: 64, color: Colors.black),
                                 ),
                               );
                             },

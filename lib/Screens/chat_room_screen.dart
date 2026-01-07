@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
 import 'package:micro_volunteering_hub/providers/chat_provider.dart';
+import 'package:micro_volunteering_hub/providers/network_provider.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
 import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -44,6 +44,14 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       final msg = jsonDecode(event);
       if (!mounted) return;
       ref.read(chatProvider.notifier).addMessage(widget.event.eventId, msg);
+      UserLocalDb.storeMessage(
+        msg["id"],
+        widget.event.eventId,
+        msg["text"],
+        msg["sender_id"],
+        msg["sender_name"],
+        DateTime.parse(msg["created_at_iso"]).millisecondsSinceEpoch,
+      );
     });
   }
   @override
@@ -55,12 +63,23 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   }
   
   Future<void> _loadMessagesOnce(String eventId) async {
-    var data = await fetchMessagesAPI(eventId);
+    final isOnline = ref.read(backendHealthProvider);
+    if(isOnline){
+      var data = await fetchMessagesAPI(eventId);
       final msgs = (data["messages"] as List)
           .map((m) => m as Map<String, dynamic>)
           .toList();
-
       ref.read(chatProvider.notifier).setMessages(eventId, msgs);
+      for(Map<String, dynamic> msg in msgs){
+        UserLocalDb.storeMessage(msg["id"], eventId, msg["text"], msg["sender_id"], msg["sender_name"], 
+        DateTime.parse(msg["created_at_iso"]).millisecondsSinceEpoch);
+      }
+    }
+    else{
+      final msgs = await UserLocalDb.getMessages(eventId);
+      
+      ref.read(chatProvider.notifier).setMessages(eventId, msgs);
+    }
   }
 
   bool get canChat {
@@ -118,6 +137,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           Consumer(
             builder:(context, ref, child) {
               final messages = ref.watch(chatProvider)[widget.event.eventId] ?? [];
+              print(messages);
               return Expanded(
                 child: messages.isEmpty ? const Center(child: Text("No messages yet")) :
                 ListView.builder(
@@ -125,7 +145,6 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                   itemCount: messages.length,
                   itemBuilder: (ctx, i) {
                     final msg = messages[i];
-              
                     final isMe = msg['sender_id'] == userId;
                     final senderName = msg['sender_name'] ?? 'User';
                     DateTime created = DateTime.parse(msg["created_at_iso"]).toLocal();

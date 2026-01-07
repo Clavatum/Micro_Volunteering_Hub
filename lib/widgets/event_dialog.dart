@@ -4,19 +4,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/helper_functions.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
+import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 
 class EventDialog extends ConsumerWidget {
   final Event event;
-  final VoidCallback? onJoin;
 
   const EventDialog({
     super.key,
     required this.event,
-    this.onJoin,
   });
+
+  Future<Map<String, bool>> _requestJoin(Map<String, dynamic> user, WidgetRef ref) async {
+    var apiResponse = await joinEventAPI(event.eventId, user["id"], user["user_name"]);
+    if(!apiResponse["ok"]){
+      showGlobalSnackBar(apiResponse["msg"]);
+      return {"success": false};
+    }
+    else{
+      if(apiResponse["instant_join"]){
+        showGlobalSnackBar("Joined to event successfully.");
+        ref.read(eventsProvider.notifier).addAttendee(event.eventId, user["id"]);
+      }
+      else{
+        showGlobalSnackBar("Sent join request to event organizer successfully.");
+      }
+      return {"success": true, "instant_join": apiResponse["instant_join"]};
+    }
+  }
 
   Future<String?> _fetchAddress() async {
     try {
@@ -58,8 +77,9 @@ class EventDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var _userData = ref.watch(userProvider);
-    bool canJoin = _userData['id'] != event.userId;
+    Map<String, dynamic> _userData = ref.watch(userProvider);
+    List<String> attendedEvents = _userData["user_attended_events"] ?? List<String>.empty(growable: true);
+    bool canJoin = (_userData['id'] != event.userId) && (!attendedEvents.any((e) => e == event.eventId));
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -264,21 +284,37 @@ class EventDialog extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton(
-                onPressed: canJoin ? onJoin ?? () => Navigator.of(context).pop() : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A86B).withAlpha(220),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    "Join Event",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
+              child: Consumer(
+                builder: (context, ref, _){
+                  final user = ref.watch(userProvider);
+                  return ElevatedButton(
+                    onPressed: canJoin
+                      ? () async{
+                          var result = await _requestJoin(user, ref);
+                          print(result);
+                          if (result["success"]!){
+                            if(result["instant_join"]!){
+                              ref.read(userProvider.notifier).attendEvent(event.eventId);
+                            }
+                            Navigator.pop(context);
+                          }
+                        }
+                      : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A86B).withAlpha(220),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        "Join Event",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  );
+                }
               ),
             ),
             const SizedBox(width: 12),

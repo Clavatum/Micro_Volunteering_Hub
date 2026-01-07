@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:micro_volunteering_hub/Screens/chat_screen.dart';
 import 'package:micro_volunteering_hub/Screens/notification_screen.dart';
 import 'package:micro_volunteering_hub/backend/client/requests.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
@@ -12,8 +12,10 @@ import 'package:micro_volunteering_hub/models/join_request.dart';
 import 'package:micro_volunteering_hub/providers/close_events_provider.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
 import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
+import 'package:micro_volunteering_hub/providers/network_provider.dart';
 import 'package:micro_volunteering_hub/providers/position_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
+import 'package:micro_volunteering_hub/utils/database.dart';
 import 'package:micro_volunteering_hub/widgets/events_preview.dart';
 import 'package:micro_volunteering_hub/widgets/last_event_preview.dart';
 import 'profile_screen.dart';
@@ -39,7 +41,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   Timer? _positionTimer;
   Timer? _pollingTimer;
+  Timer? _notificationTimer;
+
   String? _lastEventFetchCursor;
+  String? _lastEventRequestCursor;
   bool _isFetching = false;
 
   @override
@@ -49,18 +54,25 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   Future<void> _init() async {
+    final isOnline = ref.read(backendHealthProvider);
     _userData = ref.read(userProvider);
-    await fetchEvents();
+    if(isOnline){
+      await fetchEvents();
+    }
+    else{
+      List<Event> events = await UserLocalDb.getEventsDB();
+      ref.read(eventsProvider.notifier).addEvents(events);
+    }
     _setDistances();
     _setCloseEvents();
+    await _getRequests();
     startPositionTimer();
     startEventPolling();
-    await _getRequests();
+    startNotificationTimer();
     if (mounted) {
       setState(() => _isLoading = false);
     }
   }
-
   Future<void> fetchEvents() async {
     if (_isFetching) return;
     _isFetching = true;
@@ -78,6 +90,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     .toList(),
               );
         }
+        for(Event e in fetchedEvents.events){
+          UserLocalDb.storeEventDB(e);
+        }
       }
     } catch (e) {
       debugPrint("fetchEvents has failed: $e");
@@ -87,6 +102,20 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       _setDistances();
       _setCloseEvents();
     }
+  }
+
+  Future<void> startNotificationTimer() async {
+    _notificationTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      try {
+        await _getRequests();
+      } catch (e) {
+        print("Something went wrong while fetching event requests: $e");
+      }
+    });
+  }
+
+  void stopNotificationTimer() {
+    _notificationTimer?.cancel();
   }
 
   Future<void> startEventPolling() async {
@@ -204,24 +233,21 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   void dispose() {
     stopEventPolling();
     stopPositionTimer();
+    stopNotificationTimer();
     super.dispose();
   }
 
   List<JoinRequest>? requests;
 
   Future<void> _getRequests() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('join_requests')
-        .where('host_id', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-        .where('status', isEqualTo: 'pending')
-        .get();
-
-    requests = snapshot.docs
-        .map((d) => JoinRequest.fromJson(d.data()))
-        .toList();
-    if (requests == null) return;
-    ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
-    setState(() {});
+    var apiResponse = await fetchEventRequestsAPI(_userData!['id'], _lastEventRequestCursor);
+    if(apiResponse["ok"]){
+      _lastEventRequestCursor = apiResponse["cursor"];
+      requests = (apiResponse["requests"] as List? ?? []).map((e) => JoinRequest.fromJson(e)).toList();
+      if (requests == null) return;
+      ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
+      setState(() {});
+    }
   }
 
   @override
@@ -235,14 +261,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? "Guest";
-    var _requestsB = ref.watch(joinRequestProvider);
-    var pRequests = _requestsB
-        .where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid)
-        .toList();
-
-    Color activeColor = pRequests.isEmpty
-        ? const Color.fromARGB(255, 50, 50, 50)
-        : Colors.red;
+    var notificationCount = ref.watch(joinRequestProvider.notifier).requestCount();
 
     return Scaffold(
       extendBody: true,
@@ -268,19 +287,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.notifications,
-                        color: activeColor,
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => NotificationScreen(),
-                          ),
-                        );
-                      },
                     ),
                   ],
                 ),
@@ -375,6 +381,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
           child: Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Expanded(
                   child: IconButton(
@@ -386,7 +393,74 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 75),
+                const SizedBox(width: 30),
+                Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.notifications,
+                          size: 32,
+                          color: _navIndex == 1 ? primary : Colors.black54,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => NotificationScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // 🔴 Badge
+                      if (notificationCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Center(
+                              child: Text(
+                                notificationCount.toString(),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 100),
+                Expanded(
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.message,
+                      size: 32,
+                      color: _navIndex == 2 ? primary : Colors.black54,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 30),
                 Expanded(
                   child: IconButton(
                     onPressed: () {
@@ -399,7 +473,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     icon: Icon(
                       Icons.person,
                       size: 32,
-                      color: _navIndex == 1 ? primary : Colors.black54,
+                      color: _navIndex == 3 ? primary : Colors.black54,
                     ),
                   ),
                 ),

@@ -26,3 +26,8 @@ class User(BaseModel):
 
 class JoinRequest(BaseModel):
     user_id: str
+    user_name: str
+
+class EventRequest(BaseModel):
+    user_id: str
+    status: str

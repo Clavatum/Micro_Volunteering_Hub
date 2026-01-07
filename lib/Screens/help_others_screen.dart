@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:micro_volunteering_hub/models/event.dart';
-import 'package:micro_volunteering_hub/models/join_request.dart';
 import 'package:micro_volunteering_hub/providers/events_provider.dart';
-import 'package:micro_volunteering_hub/providers/join_request_provider.dart';
 import 'package:micro_volunteering_hub/providers/user_provider.dart';
 import 'package:micro_volunteering_hub/widgets/event_dialog.dart';
 
@@ -46,14 +43,6 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
       context: context,
       builder: (context) => EventDialog(
         event: event,
-        onJoin: () async {
-          await _requestJoin(
-            eventId: event.eventId,
-            userId: _userData!['id'] ?? '',
-            hostId: event.userId,
-          );
-          Navigator.of(context).pop();
-        },
       ),
     );
   }
@@ -82,32 +71,6 @@ class _HelpOthersScreenState extends ConsumerState<HelpOthersScreen> {
         _mapController.move(LatLng(41.0082, 28.9784), 13.0);
       } catch (_) {}
     }
-  }
-
-  Future<void> _requestJoin({
-    required String eventId,
-    required String userId,
-    required String hostId,
-  }) async {
-    final firestore = FirebaseFirestore.instance;
-    /* userId represents id of requesting persons id whereas hostId repr. host
- */
-    final requestId = "${eventId}_$userId";
-    var data = {
-      'requester_name': _userData!['user_name'],
-      'event_id': eventId,
-      'requester_id': userId,
-      'host_id': hostId,
-      'status': 'pending',
-      'requested_at': FieldValue.serverTimestamp(),
-    };
-
-    await firestore.collection('join_requests').doc(requestId).set(data);
-    ref
-        .read(joinRequestProvider.notifier)
-        .addJoinRequest(
-          JoinRequest.fromJson(data),
-        );
   }
 
   late ProviderSubscription _userSub;

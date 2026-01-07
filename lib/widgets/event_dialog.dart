@@ -13,41 +13,28 @@ import 'package:micro_volunteering_hub/utils/snackbar_service.dart';
 
 class EventDialog extends ConsumerWidget {
   final Event event;
-  final VoidCallback? onJoin;
 
   const EventDialog({
     super.key,
     required this.event,
-    this.onJoin,
   });
 
-  Future<bool> _requestJoin(Map<String, dynamic> user, WidgetRef ref) async {
-    /* NOT IMPLEMENTED YET DO NOT REMOVE
-    var data = {
-      'requester_name': user["user_name"],
-      'event_id': event.eventId,
-      'requester_id': user["id"],
-      'host_id': event.userId,
-      'status': 'pending',
-      'requested_at': FieldValue.serverTimestamp(),
-    };*/
-    var apiResponse = await joinEventAPI(event.eventId, user["id"]);
+  Future<Map<String, bool>> _requestJoin(Map<String, dynamic> user, WidgetRef ref) async {
+    var apiResponse = await joinEventAPI(event.eventId, user["id"], user["user_name"]);
     if(!apiResponse["ok"]){
       showGlobalSnackBar(apiResponse["msg"]);
-      return false;
+      return {"success": false};
     }
     else{
-      showGlobalSnackBar("Joined to event successfully.");
-      ref.read(eventsProvider.notifier).addAttendee(event.eventId, user["id"]);
-      return true;
+      if(apiResponse["instant_join"]){
+        showGlobalSnackBar("Joined to event successfully.");
+        ref.read(eventsProvider.notifier).addAttendee(event.eventId, user["id"]);
+      }
+      else{
+        showGlobalSnackBar("Sent join request to event organizer successfully.");
+      }
+      return {"success": true, "instant_join": apiResponse["instant_join"]};
     }
-    /*JOIN REQUESTS WITH PENDING STATE ARE NOT IMPLEMENTED YET, DO NOT REMOVE
-    await firestore.collection('join_requests').doc(requestId).set(data);
-    ref
-        .read(joinRequestProvider.notifier)
-        .addJoinRequest(
-          JoinRequest.fromJson(data),
-        );*/
   }
 
   Future<String?> _fetchAddress() async {
@@ -303,9 +290,12 @@ class EventDialog extends ConsumerWidget {
                   return ElevatedButton(
                     onPressed: canJoin
                       ? () async{
-                          var success = await _requestJoin(user, ref);
-                          if (success){
-                            ref.read(userProvider.notifier).attendEvent(event.eventId);
+                          var result = await _requestJoin(user, ref);
+                          print(result);
+                          if (result["success"]!){
+                            if(result["instant_join"]!){
+                              ref.read(userProvider.notifier).attendEvent(event.eventId);
+                            }
                             Navigator.pop(context);
                           }
                         }

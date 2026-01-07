@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +39,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   Timer? _positionTimer;
   Timer? _pollingTimer;
+  Timer? _notificationTimer;
+
   String? _lastEventFetchCursor;
+  String? _lastEventRequestCursor;
   bool _isFetching = false;
 
   @override
@@ -54,9 +56,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     await fetchEvents();
     _setDistances();
     _setCloseEvents();
+    await _getRequests();
     startPositionTimer();
     startEventPolling();
-    await _getRequests();
+    startNotificationTimer();
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -88,6 +91,20 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       _setDistances();
       _setCloseEvents();
     }
+  }
+
+  Future<void> startNotificationTimer() async {
+    _notificationTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      try {
+        await _getRequests();
+      } catch (e) {
+        print("Something went wrong while fetching event requests: $e");
+      }
+    });
+  }
+
+  void stopNotificationTimer() {
+    _notificationTimer?.cancel();
   }
 
   Future<void> startEventPolling() async {
@@ -205,24 +222,21 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   void dispose() {
     stopEventPolling();
     stopPositionTimer();
+    stopNotificationTimer();
     super.dispose();
   }
 
   List<JoinRequest>? requests;
 
   Future<void> _getRequests() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('join_requests')
-        .where('host_id', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-        .where('status', isEqualTo: 'pending')
-        .get();
-
-    requests = snapshot.docs
-        .map((d) => JoinRequest.fromJson(d.data()))
-        .toList();
-    if (requests == null) return;
-    ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
-    setState(() {});
+    var apiResponse = await fetchEventRequestsAPI(_userData!['id'], _lastEventRequestCursor);
+    if(apiResponse["ok"]){
+      _lastEventRequestCursor = apiResponse["cursor"];
+      requests = (apiResponse["requests"] as List? ?? []).map((e) => JoinRequest.fromJson(e)).toList();
+      if (requests == null) return;
+      ref.read(joinRequestProvider.notifier).setJoinRequests(requests!);
+      setState(() {});
+    }
   }
 
   @override
@@ -236,14 +250,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     }
     final user = FirebaseAuth.instance.currentUser;
     final name = user?.displayName ?? "Guest";
-    var _requestsB = ref.watch(joinRequestProvider);
-    var pRequests = _requestsB
-        .where((e) => e.hostId == FirebaseAuth.instance.currentUser!.uid)
-        .toList();
-
-    Color activeColor = pRequests.isEmpty
-        ? const Color.fromARGB(255, 50, 50, 50)
-        : Colors.red;
+    var notificationCount = ref.watch(joinRequestProvider.notifier).requestCount();
 
     return Scaffold(
       extendBody: true,
@@ -377,19 +384,52 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 ),
                 const SizedBox(width: 30),
                 Expanded(
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.notifications,
-                      size: 32,
-                      color: _navIndex == 1 ? primary : Colors.black54,
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => NotificationScreen(),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.notifications,
+                          size: 32,
+                          color: _navIndex == 1 ? primary : Colors.black54,
                         ),
-                      );
-                    },
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => NotificationScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // 🔴 Badge
+                      if (notificationCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Center(
+                              child: Text(
+                                notificationCount.toString(),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                    ],
                   ),
                 ),
                 const SizedBox(width: 100),

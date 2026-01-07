@@ -206,12 +206,12 @@ async def joinEvent(eventID: str, body: JoinRequest):
     async with request_sem:
         def joinEventTransaction():
             transaction = db.transaction()
-
             @firestore.transactional
             def run(transaction):
                 user_doc = db.collection("user_info").document(body.user_id).collection("user_attended_events").document(eventID)
                 part_doc = db.collection("participants").document(eventID).collection("users").document(body.user_id)
                 event_doc = db.collection("event_info").document(eventID)
+                request_doc = db.collection("join_requests").document("{}_{}".format(eventID,body.user_id))
 
                 user_snapshot = part_doc.get(transaction=transaction)
 
@@ -223,22 +223,35 @@ async def joinEvent(eventID: str, body: JoinRequest):
                 if event_data["participant_count"] >= event_data["people_needed"]:
                     return {"ok": False, "msg": "Event is full."}
                 
-                transaction.set(user_doc, {
-                    "joined_at": firestore.firestore.SERVER_TIMESTAMP
-                })
-                transaction.set(part_doc, {
-                    "joined_at": firestore.firestore.SERVER_TIMESTAMP
-                })
+                if event_data["instant_join"] == True:
+                    transaction.set(user_doc, {
+                        "joined_at": firestore.firestore.SERVER_TIMESTAMP
+                    })
+                    transaction.set(part_doc, {
+                        "joined_at": firestore.firestore.SERVER_TIMESTAMP
+                    })
 
-                transaction.update(event_doc, {
-                    "participant_count": firestore.firestore.Increment(1)
-                })
-
-                return {"ok": True}
+                    transaction.update(event_doc, {
+                        "participant_count": firestore.firestore.Increment(1)
+                    })
+                else:
+                    request_snapshot = request_doc.get(transaction=transaction)
+                    if request_snapshot.exists:
+                        return {"ok": False, "msg": "You already sent request to join this event. Wait for join approval from event organizer."}
+                    transaction.set(request_doc, {
+                        "requester_name": body.user_name,
+                        "event_id": eventID,
+                        "requester_id": body.user_id,
+                        "host_id": event_data["user_id"],
+                        "status": "pending",
+                        "requested_at": firestore.firestore.SERVER_TIMESTAMP
+                    })
+                return {"ok": True, "instant_join": event_data["instant_join"]}
             for i in range(MAX_RETRIES):
                 try:
                     return run(transaction)
                 except Exception as e:
+                    print(e)
                     sleep = (2 ** i) * 0.05 + random.random() * 0.05
                     time.sleep(sleep)
             return {"ok": False, "msg": "System is busy, try again shortly."}
@@ -273,6 +286,74 @@ async def leaveEvent(eventID: str, user_id: str):
         if not removed:
             return {"ok": False, "msg": "You already did not join this event."}
         return {"ok": True}
+
+@app.get("/{userID}/requests")
+async def getEventRequests(userID: str, after: Optional[str] = Query(None), limit: int = 50):
+    try:
+        query = db.collection("join_requests").where("host_id", "==", userID).where("status", "==", "pending").order_by("__name__")
+        if after:
+            last_doc = await run_in_threadpool(lambda: db.collection("join_requests").document(after).get())
+            query = query.start_after(last_doc)
+        docs = await run_in_threadpool(lambda: list(query.limit(limit).stream()))
+        requests = []
+        last_id = None
+        for doc in docs:
+            data = doc.to_dict()
+            requests.append(data)
+            last_id = doc.id
+        return {"ok": True, "requests": requests, "cursor": last_id}
+    except Exception as e:
+        print(e)
+        return {"ok": False, "msg": str(e)}
+
+@app.post("/event/{eventID}/requests")
+async def eventRequests(eventID: str, body: EventRequest):
+    async with request_sem:
+        def eventRequestsTransaction():
+            transaction = db.transaction()
+
+            @firestore.transactional
+            def run(transaction):
+                request_doc = db.collection("join_requests").document("{}_{}".format(eventID,body.user_id))
+                user_doc = db.collection("user_info").document(body.user_id).collection("user_attended_events").document(eventID)
+                part_doc = db.collection("participants").document(eventID).collection("users").document(body.user_id)
+                event_doc = db.collection("event_info").document(eventID)
+                if(body.status == "reject"):
+                    transaction.update(request_doc, {
+                        "status": "rejected",
+                    })
+                elif(body.status == "approve"):
+                    event_snapshot = event_doc.get(transaction=transaction)
+                    event_data = event_snapshot.to_dict()
+
+                    #User cannot join if event capacity is full
+                    if event_data["participant_count"] >= event_data["people_needed"]:
+                        return {"ok": False, "msg": "Event is full, cannot approve join request."}
+                    
+                    transaction.update(request_doc, {
+                        "status": "approved",
+                    })
+
+                    transaction.set(user_doc, {
+                        "joined_at": firestore.firestore.SERVER_TIMESTAMP
+                    })
+                    transaction.set(part_doc, {
+                        "joined_at": firestore.firestore.SERVER_TIMESTAMP
+                    })
+
+                    transaction.update(event_doc, {
+                        "participant_count": firestore.firestore.Increment(1)
+                    })
+                return {"ok": True}
+            for i in range(MAX_RETRIES):
+                try:
+                    return run(transaction)
+                except Exception as e:
+                    sleep = (2 ** i) * 0.05 + random.random() * 0.05
+                    time.sleep(sleep)
+            return {"ok": False, "msg": "System is busy, try again shortly."}
+        result = await run_in_threadpool(eventRequestsTransaction)
+        return result
 
 @app.get("/event/delete/all")
 def removeEventAll(secret: str = Query(...)):

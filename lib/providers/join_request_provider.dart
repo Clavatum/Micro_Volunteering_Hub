@@ -7,13 +7,22 @@ class JoinRequestsProvider extends StateNotifier<List<JoinRequest>> {
       ONLY USERS JOIN REQUESTSSS!!!!
   
    */
-
+  int requestCount(){
+    return state.length;
+  }
   void addJoinRequest(JoinRequest request) {
+    final alreadyExists = state.any((r) =>
+        r.requesterId == request.requesterId &&
+        r.eventId == request.eventId);
+    if (alreadyExists) return;
+
     state = [...state, request];
   }
 
   void setJoinRequests(List<JoinRequest> requests) {
-    state = requests;
+    for(JoinRequest r in requests){
+      addJoinRequest(r);
+    }
   }
 
   void removeJoinRequest(JoinRequest request) {

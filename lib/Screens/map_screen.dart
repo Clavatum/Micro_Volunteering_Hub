@@ -16,8 +16,7 @@ class MapScreen extends ConsumerStatefulWidget {
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen>
-    with SingleTickerProviderStateMixin {
+class _MapScreenState extends ConsumerState<MapScreen> with SingleTickerProviderStateMixin {
   Position? _currentPosition;
   final MapController _mapController = MapController();
   double _currentZoom = 13;
@@ -25,6 +24,9 @@ class _MapScreenState extends ConsumerState<MapScreen>
   LatLng? _currentCenter;
   LatLng? tappedPos;
   Map<String, dynamic>? _userData;
+
+  bool _isMapInitialized = false;
+  bool _followUser = true;
 
   String userAgent = '';
   bool _isUserAgentReady = false;
@@ -42,15 +44,31 @@ class _MapScreenState extends ConsumerState<MapScreen>
   @override
   void initState() {
     super.initState();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+
     initUserAgent();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userData = ref.read(userProvider);
+      final pos = userData["user_position"];
+
+      if (pos != null && !_isMapInitialized) {
+        setState(() {
+          _currentPosition = pos;
+          _currentCenter = LatLng(pos.latitude, pos.longitude);
+          _isMapInitialized = true;
+        });
+      }
+    });
   }
 
   @override
@@ -60,18 +78,19 @@ class _MapScreenState extends ConsumerState<MapScreen>
   }
 
   void _centerToMyLocation() {
-    if (_currentPosition != null) {
-      _mapController.move(
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        _currentZoom,
-      );
-      setState(() {
-        _currentCenter = LatLng(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
-        );
-      });
-    }
+    if (_currentPosition == null) return;
+
+    final target = LatLng(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
+
+    _mapController.move(target, _currentZoom);
+
+    setState(() {
+      _currentCenter = target;
+      _followUser = true;
+    });
   }
 
   void incrementZoom() {
@@ -79,9 +98,7 @@ class _MapScreenState extends ConsumerState<MapScreen>
       setState(() {
         _currentZoom += 1;
       });
-      final center =
-          _currentCenter ??
-          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
@@ -91,17 +108,14 @@ class _MapScreenState extends ConsumerState<MapScreen>
       setState(() {
         _currentZoom -= 1;
       });
-      final center =
-          _currentCenter ??
-          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final center = _currentCenter ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _mapController.move(center, _currentZoom);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final _userData = ref.watch(userProvider);
-    _currentPosition = _userData["user_position"];
+    final userData = ref.watch(userProvider);
 
     if (_currentPosition == null || !_isUserAgentReady) {
       return Scaffold(
@@ -145,38 +159,34 @@ class _MapScreenState extends ConsumerState<MapScreen>
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter:
-                  _currentCenter ??
-                  LatLng(
-                    _currentPosition!.latitude,
-                    _currentPosition!.longitude,
-                  ),
+              initialCenter: _currentCenter!,
               initialZoom: _currentZoom,
               minZoom: 1,
               maxZoom: 18,
               onTap: (tapPosition, point) async {
                 _animationController.forward();
-                var selectedAddress =
-                    await PositionService.getHumanReadableAddressFromLatLng(
-                      point.latitude,
-                      point.longitude,
-                    );
+                var selectedAddress = await PositionService.getHumanReadableAddressFromLatLng(
+                  point.latitude,
+                  point.longitude,
+                );
                 setState(() {
                   tappedPos = point;
                   _selectedAddress = selectedAddress;
                 });
               },
               onPositionChanged: (position, hasGesture) {
-                setState(() {
-                  _currentCenter = position.center;
-                  _currentZoom = position.zoom;
-                });
+                if (hasGesture) {
+                  setState(() {
+                    _currentCenter = position.center;
+                    _currentZoom = position.zoom;
+                    _followUser = false;
+                  });
+                }
               },
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 userAgentPackageName: userAgent,
                 maxZoom: 19,
               ),

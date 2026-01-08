@@ -54,7 +54,6 @@ lib/backend/server/.env
 lib/backend/server/*.json
 lib/backend/server/__pycache__/
 lib/backend/server/local_main.py
-lib/backend/server/stress_test.py
 lib/backend/server/test_messaging.py
 
 #Keys (IMPORTANT!!!)

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:micro_volunteering_hub/models/event.dart';
 
@@ -49,6 +50,8 @@ Future<Map<String, dynamic>> createEventAPI(
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -75,6 +78,8 @@ Future<Map<String, dynamic>> createAndStoreUserAPI(
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -102,6 +107,8 @@ Future<FetchEventsResult> fetchEventsAPI(String? cursor) async {
   } on TimeoutException {
     print("fetchEventsAPI: Request to API server has timed out.");
     return FetchEventsResult([], cursor);
+  } on SocketException{
+    return FetchEventsResult([], cursor);
   }
 }
 
@@ -124,6 +131,8 @@ Future<Map<String, dynamic>> joinEventAPI(String eventId, String userId, String 
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -146,6 +155,8 @@ Future<Map<String, dynamic>> leaveEventAPI(String eventId, String userId) async 
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -168,6 +179,8 @@ Future<Map<String, dynamic>> eventRequestsAPI(String eventId, String userId, Str
     }
   } on TimeoutException {
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -188,6 +201,8 @@ Future<Map<String, dynamic>> fetchEventRequestsAPI(String userID, String? cursor
   } on TimeoutException {
     print("fetchEventRequestsAPI: Request to API server has timed out.");
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -208,6 +223,8 @@ Future<Map<String, dynamic>> fetchUserAPI(String userID) async {
   } on TimeoutException {
     print("fetchUserAPI: Request to API server has timed out.");
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }
 
@@ -229,5 +246,7 @@ Future<Map<String, dynamic>> fetchMessagesAPI(String eventID) async{
   } on TimeoutException {
     print("fetchMessagesAPI: Request to API server has timed out.");
     return {"ok": false, "msg": "Request to API server has timed out."};
+  } on SocketException{
+    return {"ok": false, "msg": "SocketException"};
   }
 }

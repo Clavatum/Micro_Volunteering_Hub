@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -26,8 +27,8 @@ class ChatRoomScreen extends ConsumerStatefulWidget {
 class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final userId = FirebaseAuth.instance.currentUser!.uid;
-  late final WebSocketChannel channel;
-  late final StreamSubscription sub;
+  WebSocketChannel? channel;
+  StreamSubscription? sub;
   List<Map<String, dynamic>> messages = [];
 
   @override
@@ -39,26 +40,34 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     }
 
     String host = usedServerURL.substring(usedServerURL.indexOf("//")+2);
-    channel = WebSocketChannel.connect(Uri.parse("ws://$host/websocket/chat/${widget.event.eventId}"));
-    sub = channel.stream.listen((event){
-      final msg = jsonDecode(event);
-      if (!mounted) return;
-      ref.read(chatProvider.notifier).addMessage(widget.event.eventId, msg);
-      UserLocalDb.storeMessage(
-        msg["id"],
-        widget.event.eventId,
-        msg["text"],
-        msg["sender_id"],
-        msg["sender_name"],
-        DateTime.parse(msg["created_at_iso"]).millisecondsSinceEpoch,
-      );
-    });
+    try{
+      channel = WebSocketChannel.connect(Uri.parse("ws://$host/websocket/chat/${widget.event.eventId}"));
+      sub = channel!.stream.listen((event){
+        final msg = jsonDecode(event);
+        if (!mounted) return;
+        ref.read(chatProvider.notifier).addMessage(widget.event.eventId, msg);
+        UserLocalDb.storeMessage(
+          msg["id"],
+          widget.event.eventId,
+          msg["text"],
+          msg["sender_id"],
+          msg["sender_name"],
+          DateTime.parse(msg["created_at_iso"]).millisecondsSinceEpoch,
+        );
+      });
+    } on SocketException catch(e){
+      debugPrint("WebSocket failed (offline): $e");
+    }
   }
   @override
   void dispose() {
     _messageController.dispose();
-    sub.cancel();
-    channel.sink.close();
+    if(sub != null){
+      sub!.cancel();
+    }
+    if(channel != null){
+      channel!.sink.close();
+    }
     super.dispose();
   }
   
@@ -92,7 +101,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     if (text.isEmpty || !canChat) return;
 
     final user = FirebaseAuth.instance.currentUser!;
-    channel.sink.add(jsonEncode({
+    channel!.sink.add(jsonEncode({
       "text": text,
       "sender_id": user.uid,
       "sender_name": user.displayName ?? "User",

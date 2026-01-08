@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,15 +11,27 @@ import 'package:google_fonts/google_fonts.dart';
 
 const Color _primaryColor = Color(0xFF00A86B);
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(
-    ProviderScope(
-      child: MyApp(),
-    ),
-  );
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+    );
+
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    runApp(
+      ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stackTrace) {
+    debugPrint('UNCAUGHT ERROR: $error');
+    debugPrint(stackTrace.toString());
+  });
 }
 
 class MyApp extends StatelessWidget {
